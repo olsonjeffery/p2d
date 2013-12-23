@@ -97,3 +97,4 @@ i686-pc-mingw32/
 /bin
 /src/sdl2
 /src/rust-sdl2
+rustpkg_db.json
