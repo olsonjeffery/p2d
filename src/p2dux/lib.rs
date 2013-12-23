@@ -17,7 +17,7 @@ use extra::time;
 use sdl2::event::{QuitEvent, KeyDownEvent, NoEvent, poll_event};
 use sdl2::keycode::*;
 
-use p2d::sim::world::World;
+use p2d::world::World;
 
 pub mod gfx;
 

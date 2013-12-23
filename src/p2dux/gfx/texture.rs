@@ -6,7 +6,7 @@ use sdl2::surface::{Surface};
 use sdl2::render::{Renderer, Texture};
 use sdl2::rect::{Rect};
 
-use p2d::sim::sprite::SpriteTile;
+use p2d::sprite::SpriteTile;
 
 pub struct TextureSheet {
     name: ~str,

@@ -3,9 +3,9 @@ use std::option::{Some, None};
 
 use super::GameDisplay;
 use super::texture::TextureSheets;
-use p2d::sim::world::{World, GlobalCoord};
-use p2d::sim::sprite::SpriteSheet;
-use p2d::sim::zone::{Zone, Tile};
+use p2d::world::{World, GlobalCoord};
+use p2d::sprite::SpriteSheet;
+use p2d::zone::{Zone, Tile};
 
 // so this is assuming uniform tile size amongst a group of tiles in a
 // Zone

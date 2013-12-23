@@ -1,7 +1,7 @@
 use sdl2;
 use sdl2::render::Renderer;
 use std::hashmap::HashMap;
-use p2d::sim::sprite::SpriteSheet;
+use p2d::sprite::SpriteSheet;
 
 pub mod draw;
 pub mod texture;

@@ -1,6 +1,6 @@
 use std::hashmap::{HashMap, HashSet};
-use sim::world::{World, GlobalCoord, TraversalDirection, North, South, East, West, NoDirection};
-use sim::zone::{Zone, Tile, Void};
+use world::{World, GlobalCoord, TraversalDirection, North, South, East, West, NoDirection};
+use zone::{Zone, Tile, Void};
 
 pub fn compute(world: &World, focus: GlobalCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
