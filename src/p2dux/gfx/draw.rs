@@ -12,7 +12,7 @@ use extra::uuid::Uuid;
 use super::GameDisplay;
 use super::texture::TextureSheets;
 use p2d::world::{GlobalCoord, Payload, World, RelativeCoord, EntityData};
-use p2d::sprite::SpriteSheet;
+use p2d::sprite::{SpriteFontSheet, SpriteSheet};
 use p2d::zone::{Zone, Tile};
 
 //pub type Payload_Processor<'a, T> = 'b |w: &'a World, display: &'a GameDisplay,
@@ -63,9 +63,9 @@ pub fn draw_grid_tile<T: Send + Payload>(t: &Tile, world: &World<T>,
     }
 }
 
-pub fn draw_agent_los<'a, T: Send + Payload>(world: &World<T>, visible_tiles: &~[RelativeCoord], display: &GameDisplay, payload_cb: Payload_Processor<T>) {
+pub fn draw_tiles_from<'a, T: Send + Payload>(world: &World<T>, visible_tiles: &~[RelativeCoord], origin: (int, int), display: &GameDisplay, payload_cb: Payload_Processor<T>) {
     // screen center
-    let (base_x, base_y) = (400, 300);
+    let (base_x, base_y) = origin;
     for tc in visible_tiles.iter() {
         let zone = world.get_zone(tc.zone_id);
         //println!("draw_agent_los: zid:{:} {:?}", tc.zone_id, (tc.lx, tc.ly));
@@ -73,5 +73,17 @@ pub fn draw_agent_los<'a, T: Send + Payload>(world: &World<T>, visible_tiles: &~
         // need to account multiple zones/reference points w/ portalling..
         draw_grid_tile(tile, world, display, base_x, base_y, tc.gx, tc.gy,
                        payload_cb);
+    }
+}
+
+pub fn draw_font_line(display: &GameDisplay, font: &SpriteFontSheet, coords: (int, int), text: ~str) {
+    let (mut cx, cy) = coords;
+    let sheet = display.sheets.get(&font.get_sheet());
+    let text_slice = text.slice_from(0);
+    for c in text_slice.chars() {
+        let font_sprite = font.sprite_for(&c).expect(format!("Sprite not found for {:?}! Shouldn't happen...", c));
+        let (fsx, fsy) = font_sprite.size;
+        sheet.draw_tile(display.renderer, font_sprite, (cx, cy), font_sprite.size);
+        cx += (fsx+2) as int;
     }
 }
