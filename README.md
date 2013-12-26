@@ -12,7 +12,7 @@ The Author says: I created this repo to share the (generalizable) work that I've
 
 #### Current Capability
 
-- Load and keep a `p2dux::gfx::TextureSheet`, whose input is defined `p2d::sprite::SpriteSheet` in memory from a `.bmp` file on the filesystem
+- Load and keep a `p2dux::gfx::TextureSheet`, whose input is defined by `p2d::sprite::SpriteSheet`, in memory from a `.bmp` file on the filesystem
 - A `TextureSheet` can draw a portion of itself, as defined in `p2d::sprite::SpriteSheet`, to the screen
 - A `World<T>` data structure, consisting of a number of `Zone`s, `Portal`s and `Payload`s
 - Some utility API around interacting with the above items for the purpose of field-of-view discovery and drawing-to-the-screen
@@ -25,13 +25,14 @@ The Author says: I created this repo to share the (generalizable) work that I've
 - Further generalization of `World<T>` to pull out everything from `Tile` except the `portal_id` and `payload_id` fields
   - Situations that call for interacting with `Tile` payloads in any way (like in `p2d::fov` or `p2dux::gfx::draw`) would take a parameterized strategy trait impl to pull out the `Payload` and make decisions based on its contents
   - The Goal is to push `passable`, `fov`, `sprites`, etc into the `Payload`s as much as possible
+- Embedding and loading `TextureSheet`s, etc, from the application bin
 - Refine the render loop strategy
   - Currently each tile is drawn directly, via `RenderCopy()`, to the `sdl2::render::Renderer` that represents the screen
   - This should be replaced with having tiles drawn to an off-screen render target, which can then have shaders/post-processing applied, and then drawn to the window `Renderer`
 
 ## Workspace Structure
 
-- `pd2ux`: A crate, with dependencies on `rust-sdl2` and `p2d` that handles graphics interaction and input management. It provides different, specialized strategies to drawing graphics based on non-SDL2-coupled data structures defined in `p2d`
+- `p2dux`: A crate, with dependencies on `rust-sdl2` and `p2d` that handles graphics interaction and input management. It provides different, specialized strategies for drawing based on non-SDL2-coupled data structures defined in `p2d`
 - `p2d`: Provides a set of non-SDL2-coupled data structures for defining graphics constructs to be drawn to the screen in `p2dux`. It also contains some algorithms & utilities for harnessing those structures in novel ways (such as `p2d::fov`)
 - A `rust-sdl2` submodule is kept within the root of this repo, pointing at [olsonjeffery/rust-sdl2](http://github.com/olsonjeffery/rust-sdl2)
 
@@ -50,4 +51,4 @@ $ git submodule init && git submodule update
 $ RUST_PATH=`pwd`/rust-sdl2 rustpkg install p2dux <+ whatever rustpkg config params needed to build rust-sdl2>
 ~~~~
 
-Note that, in the last command, we make the `rust-sdl2` submodule repo available to `rustpkg`, so that it can locate `rust-sdl2`, which is a dependency of the `pd2ux` crate. Also, if you have to pass any config params to `rustpkg` in order to build `rust-sdl2`, you'll do that there, as well (e.g. you must pass `--cfg mac_framework` on OSX if you've installed the official SDL2 dev framework package).
+Note that, in the last command, we make the `rust-sdl2` submodule repo available to `rustpkg`, so that it can locate `rust-sdl2`, which is a dependency of the `p2dux` crate. Also, if you have to pass any config params to `rustpkg` in order to build `rust-sdl2`, you'll do that there, as well (e.g. you must pass `--cfg mac_framework` on OSX if you've installed the official SDL2 dev framework package).
