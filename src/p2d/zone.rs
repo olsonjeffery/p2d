@@ -1,3 +1,10 @@
+// Copyright 2013-2014 Jeffery Olson
+//
+// Licensed under the 3-Clause BSD License, see LICENSE.txt
+// at the top-level of this repository.
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //  a logical representation of a discrete area (a room, hallway, an entire
 // floor of a tower/fortress, etc)
 // zones are just game data.. no display/ptr stuff that could cause race

@@ -1,3 +1,10 @@
+// Copyright 2013-2014 Jeffery Olson
+//
+// Licensed under the 3-Clause BSD License, see LICENSE.txt
+// at the top-level of this repository.
+// This file may not be copied, modified, or distributed
+// except according to those terms.
+
 #[link(name = "p2dux#0.1",
        uuid = "263e35b2-0727-11e3-b3dd-29219a890b3c",
        url = "http://github.com/olsonjeffery/p2d")];
