@@ -60,7 +60,7 @@ pub fn default_handler<T: Send + Payload>(world: &mut World<T>, display: &gfx::G
     ret_event
 }
 pub trait UxManager<TOut> {
-    fn handle(&mut self) -> Option<TOut>;
+    fn handle(&mut self, ms_since: u64, fps: uint) -> Option<TOut>;
     fn throttle(&mut self, fps: uint) -> TOut {
         let target_fps = (1000 / fps) as u64;
 
@@ -68,6 +68,7 @@ pub trait UxManager<TOut> {
         let mut fps_ctr = 0;
         let mut next_fps = last_time + 1000;
         let mut exit_val = None;
+        let mut curr_fps = 0;
         loop {
             let now_time = time::precise_time_ns() / 1000000;
             let ms_since = now_time - last_time;
@@ -76,13 +77,13 @@ pub trait UxManager<TOut> {
             fps_ctr = fps_ctr + 1;
             if now_time >= next_fps {
                 next_fps = now_time + 1000;
-                //println!("{} fps", fps_ctr);
+                curr_fps = fps_ctr;
                 fps_ctr = 0;
             }
 
-            match self.handle() {
+            match self.handle(ms_since, curr_fps) {
                 None => {
-                    // main loop throttle to 60 fps
+                    // main loop throttle to provided fps
                     let now_time = time::precise_time_ns() / 1000000;
                     let next_frame = last_time + target_fps;
                     if (now_time < next_frame) {
