@@ -17,10 +17,11 @@ The Author says: I created this repo to share the (generalizable) work that I've
 - A `World<T>` data structure, consisting of a number of `Zone`s, `Portal`s and `Payload`s
 - Some utility API around interacting with the above items for the purpose of field-of-view discovery and drawing-to-the-screen
 - A rough pattern about UX/input management that also forms the basis of the main loop
+- data-structures representing variable-width sprite fonts and basic API for drawing a line of text, in a given `p2d::sprite::SpriteFontSheet` at a given screen location
 
 #### Future Work
 
-- data-structures representing variable-width sprite fonts and API specialized for drawing them
+- Further refinement of the font-drawing API (such as rendering a block of text in a word-wrapped fashion within a bounding box.. what about scrolling.. ?)
 - Data structures simpler than `World<T>` for representing non-fancy tile/grid structures like UX menus, etc and API for drawing them
 - Further generalization of `World<T>` to pull out everything from `Tile` except the `portal_id` and `payload_id` fields
   - Situations that call for interacting with `Tile` payloads in any way (like in `p2d::fov` or `p2dux::gfx::draw`) would take a parameterized strategy trait impl to pull out the `Payload` and make decisions based on its contents
@@ -40,7 +41,7 @@ The Author says: I created this repo to share the (generalizable) work that I've
 
 It is currently building w/ `rustc` 0.9-pre (41cbbb6).
 
-Since `p2dux` relies on `rust-sdl2`, you have to keep it's build-time configuration requirements in mind when building packages in the `p2d` repo.
+Since `p2dux` relies on `rust-sdl2`, you have to keep it's build-time configuration requirements in mind when building crates in the `p2d` repo.
 
 Assuming a typical *nix-like shell and a working install of the Rust toolchain avaiable in your `PATH`:
 
