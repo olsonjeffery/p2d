@@ -1,11 +1,11 @@
 use std::hashmap::{HashMap, HashSet};
-use world::{World, GlobalCoord, TraversalDirection, North, South, East, West, NoDirection};
+use world::{Payload, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
 use zone::{Zone, Tile, Void};
 
-pub fn compute(world: &World, focus: GlobalCoord, radius: uint,
+pub fn compute<T: Send + Payload>(world: &World<T>, focus: RelativeCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
-                -> ~[GlobalCoord] {
-    let mut visible_tiles: HashSet<GlobalCoord> = HashSet::new();
+                -> ~[RelativeCoord] {
+    let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
     let mut pending_zones = ~[(focus.zone_id, (focus.lx, focus.ly),
                               (focus.gx, focus.gy), radius, 0, NoDirection)];
     let octants = [
@@ -51,7 +51,7 @@ pub fn compute(world: &World, focus: GlobalCoord, radius: uint,
         let zone = world.get_zone(curr_zid);
         // always insert focus pos, then check for portal at starting pos
         if from_pid == 0 {
-            visible_tiles.insert(GlobalCoord::new(curr_zid, curr_focus, curr_offset));
+            visible_tiles.insert(RelativeCoord::new(curr_zid, curr_focus, curr_offset));
             let curr_tile = zone.get_tile(curr_focus);
             match curr_tile.portal_id {
                 Some(pid) => {
@@ -94,12 +94,12 @@ fn abs(a: int) -> uint {
     if a < 0 { (a * -1) as uint } else { a as uint }
 }
 
-fn compute_octant(world: &World, zone: &Zone, position: (uint, uint),
+fn compute_octant<T: Send + Payload>(world: &World<T>, zone: &Zone, position: (uint, uint),
                 offset: (int, int), max_radius: uint, from_pid: uint,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
                 dn: (int, int), is_vert: bool, from_dir: TraversalDirection)
-        -> (~[GlobalCoord],
+        -> (~[RelativeCoord],
             ~[(uint, (uint, uint), (int, int), uint, uint, TraversalDirection)]) {
     let mut visible_tiles = HashSet::new();
     let mut pending_zones = HashSet::new();
@@ -325,7 +325,7 @@ fn compute_octant(world: &World, zone: &Zone, position: (uint, uint),
                         None => true
                     };
                     if non_blocking_axis && add_this_tile {
-                        visible_tiles.insert(GlobalCoord::new(
+                        visible_tiles.insert(RelativeCoord::new(
                             zone.id, (x as uint, y as uint),
                             this_gx));
                     }
@@ -380,7 +380,7 @@ fn compute_octant(world: &World, zone: &Zone, position: (uint, uint),
      pending_zones.move_iter().to_owned_vec())
 }
 
-fn build_pending_zone_entry(world: &World, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
+fn build_pending_zone_entry<T:Send + Payload>(world: &World<T>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
     let portal = world.get_portal(pid);
     let (ozid, from_dir) = portal.info_from(zid);
     let other_zone = world.get_zone(ozid);

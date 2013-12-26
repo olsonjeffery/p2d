@@ -17,7 +17,7 @@ use extra::time;
 use sdl2::event::{QuitEvent, KeyDownEvent, NoEvent, poll_event};
 use sdl2::keycode::*;
 
-use p2d::world::World;
+use p2d::world::{World, Payload};
 
 pub mod gfx;
 
@@ -25,7 +25,7 @@ pub enum UxEvent {
     Continue,
     Quit
 }
-pub fn default_handler(world: &mut World, display: &gfx::GameDisplay) -> UxEvent {
+pub fn default_handler<T: Send + Payload>(world: &mut World<T>, display: &gfx::GameDisplay) -> UxEvent {
     let mut ret_event = Continue;
     let mut stop_loop = false;
     'event : loop {

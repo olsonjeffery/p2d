@@ -6,8 +6,9 @@
 use std::option::{None, Some};
 use std::vec::with_capacity;
 use std::hashmap::HashMap;
+use extra::uuid::Uuid;
 use super::sprite::SpriteTile;
-use super::world::TraversalDirection;
+use super::world::{TraversalDirection, GlobalCoord};
 
 pub fn coords_to_idx(coords: (uint, uint), size: uint) -> uint {
     let (x, y) = coords;
@@ -15,11 +16,10 @@ pub fn coords_to_idx(coords: (uint, uint), size: uint) -> uint {
 }
 
 pub enum ZoneTraversalResult {
-    EntityMoved,
+    Destination(GlobalCoord),
     DestinationBlocked,
-    DestinationOccupied(uint),
+    DestinationOccupied(Uuid),
     DestinationOutsideBounds,
-    Error
 }
 pub enum FovType {
     Blocking,
@@ -39,7 +39,7 @@ pub struct Tile {
     passable: bool,
     fov: FovType,
     sprites: ~[SpriteTile],
-    agent_id: Option<uint>,
+    payload_id: Option<Uuid>,
     portal_id: Option<uint>
 }
 
@@ -50,7 +50,7 @@ impl Tile {
             passable: false,
             fov: Void,
             sprites: ~[],
-            agent_id: None,
+            payload_id: None,
             portal_id: None
         }
     }
@@ -61,7 +61,7 @@ pub struct Zone {
     size: uint,
     last_tile_id: uint,
     all_tiles: ~[Tile],
-    priv agent_coords: HashMap<uint, (uint, uint)>,
+    priv payload_coords: HashMap<Uuid, (uint, uint)>,
     priv portal_coords: HashMap<uint, (uint, uint)>
 }
 
@@ -73,7 +73,7 @@ impl Zone {
             size: size,
             last_tile_id: 0,
             all_tiles: with_capacity(size*size),
-            agent_coords: HashMap::new(),
+            payload_coords: HashMap::new(),
             portal_coords: HashMap::new()
         };
         (size*size).times(|| {
@@ -86,8 +86,8 @@ impl Zone {
     ///////////////////////
     // coordinate information for things within the Zone
     ///////////////////////
-    pub fn get_agent_coords<'a>(&'a self, aid: &uint) -> &'a (uint, uint) {
-        self.agent_coords.find(aid).expect(format!("Unable to find coords for agent {:?}", aid))
+    pub fn get_payload_coords<'a>(&'a self, plid: &Uuid) -> &'a (uint, uint) {
+        self.payload_coords.find(plid).expect(format!("Unable to find coords for payload {:?}", plid))
     }
     pub fn get_portal_coords<'a>(&'a self, pid: &uint) -> &'a (uint, uint) {
         self.portal_coords.find(pid).expect(format!("Unable to find coords for portal {:?}", pid))
@@ -140,6 +140,43 @@ impl Zone {
         }
         self.portal_coords.insert(pid, coords);
     }
+    pub fn move_payload(&mut self, coords: (uint, uint), plid: Uuid) -> ZoneTraversalResult {
+        let in_bounds = self.coords_in_bounds(coords);
+        if !in_bounds {
+            DestinationOutsideBounds
+        } else {
+            // this will all move into some kind "traversal predicate" fn
+            // that would be passed to this fn when passable, etc moved into
+            // the payload.
+            {
+                let (is_occupied, is_passable) = {
+                    let target_tile = self.get_tile(coords);
+                    (target_tile.payload_id, target_tile.passable)
+                };
+                if is_occupied.is_some() {
+                    return DestinationOccupied(is_occupied.unwrap());
+                }
+                if !is_passable {
+                    return DestinationBlocked
+                }
+            }
+            // clear their previous position..
+            let agent_in_this_zone = self.payload_coords.contains_key(&plid);
+            if agent_in_this_zone {
+                self.remove_payload(&plid)
+            }
+            self.payload_coords.insert(plid, coords);
+            let target_tile = self.get_tile_mut(coords);
+            target_tile.payload_id = Some(plid);
+            Destination(GlobalCoord::new(self.id, coords))
+        }
+    }
+    pub fn remove_payload(&mut self, plid: &Uuid) {
+        let coords = self.payload_coords.pop(plid).expect("Tried to remove payload from zone, wasn't there!");
+        let t = self.get_tile_mut(coords);
+        t.payload_id = None;
+    }
+/*
     pub fn remove_agent(&mut self, agent_id: uint) {
         match self.agent_coords.pop(&agent_id) {
             Some(c) => self.tile_at_mut(c, |t| {
@@ -177,4 +214,5 @@ impl Zone {
             DestinationOutsideBounds
         }
     }
+*/
 }

@@ -3,8 +3,8 @@ use std::libc;
 use std::cmp::{Eq, TotalEq};
 use std::to_bytes::{Cb, IterBytes};
 use std::hashmap::{HashMap, HashSet};
-use super::zone::{Zone, ZoneTraversalResult, EntityMoved};
-use super::agent::Agent;
+use extra::uuid::Uuid;
+use super::zone::{Zone, ZoneTraversalResult, Destination, DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
 use super::fov;
 
@@ -29,9 +29,18 @@ impl TraversalDirection {
     }
 }
 
-pub struct World {
+pub trait Payload {
+    fn get_id(&self) -> Uuid;
+}
+
+pub struct EntityData<TPayload> {
+    zone_id: uint,
+    payload: TPayload
+}
+
+pub struct World<TPayload> {
     zones: HashMap<uint, Zone>,
-    agents: HashMap<uint, Agent>,
+    payloads: HashMap<Uuid, EntityData<TPayload>>,
     portals: HashMap<uint, Portal>,
     latest_agent_id: uint,
     latest_zone_id: uint,
@@ -39,8 +48,23 @@ pub struct World {
     starting_agent: uint
 }
 
-#[deriving(IterBytes)]
+#[deriving(Eq, TotalEq, IterBytes)]
 pub struct GlobalCoord {
+    zone_id: uint,
+    coords: (uint, uint)
+}
+
+impl GlobalCoord {
+    pub fn new(zone_id: uint, coords: (uint, uint)) -> GlobalCoord {
+        GlobalCoord {
+            zone_id: zone_id,
+            coords: coords
+        }
+    }
+}
+
+#[deriving(IterBytes)]
+pub struct RelativeCoord {
     zone_id: uint,
     lx: uint,
     ly: uint,
@@ -48,11 +72,11 @@ pub struct GlobalCoord {
     gy: int
 }
 
-impl GlobalCoord {
-    pub fn new(zone_id: uint, coords: (uint, uint), g_coords: (int, int)) -> GlobalCoord {
+impl RelativeCoord {
+    pub fn new(zone_id: uint, coords: (uint, uint), g_coords: (int, int)) -> RelativeCoord {
         let (x, y) = coords;
         let (gx, gy) = g_coords;
-        GlobalCoord {
+        RelativeCoord {
             zone_id: zone_id,
             lx: x,
             ly: y,
@@ -61,8 +85,8 @@ impl GlobalCoord {
         }
     }
 }
-impl Eq for GlobalCoord {
-    fn eq(&self, other: &GlobalCoord) -> bool {
+impl Eq for RelativeCoord {
+    fn eq(&self, other: &RelativeCoord) -> bool {
         return self.zone_id == other.zone_id
             && self.gx == other.gx
             && self.gy == other.gy
@@ -70,8 +94,8 @@ impl Eq for GlobalCoord {
             && self.ly == other.ly
     }
 }
-impl TotalEq for GlobalCoord {
-    fn equals(&self, other: &GlobalCoord) -> bool {
+impl TotalEq for RelativeCoord {
+    fn equals(&self, other: &RelativeCoord) -> bool {
         return self.zone_id == other.zone_id
             && self.gx == other.gx
             && self.gy == other.gy
@@ -80,11 +104,11 @@ impl TotalEq for GlobalCoord {
     }
 }
 
-impl World {
-    pub fn new() -> World {
+impl<TPayload: Send + Payload> World<TPayload> {
+    pub fn new() -> World<TPayload> {
         let mut w = World {
             zones: HashMap::new(),
-            agents: HashMap::new(),
+            payloads: HashMap::new(),
             portals: HashMap::new(),
             latest_agent_id: 0,
             latest_zone_id: 0,
@@ -95,24 +119,20 @@ impl World {
     }
 
     // Entity creation
-    pub fn new_agent(&mut self, zone_id: uint, coords: (uint, uint), cb: |&mut Agent|) -> uint {
-        let next_id = self.latest_agent_id + 1;
-        let mut agent = Agent::stub();
-        agent.id = next_id;
-        self.latest_agent_id = next_id;
-        self.agents.find_or_insert(next_id, agent);
+    pub fn new_payload(&mut self, zone_id: uint, coords: (uint, uint), payload: TPayload) {
+        let next_id = payload.get_id();
+        if self.payloads.contains_key(&next_id) {
+            fail!("A payload with the id:{:?} is already placed within the World!", next_id);
+        }
         {
-            let new_agent = self.agents.find_mut(&next_id).expect(format!("Couldn't get newly added agent {:u}", next_id));
-            new_agent.zone_id = zone_id;
-            cb(new_agent);
+            let mut zone = self.get_zone_mut(&zone_id);
+            zone.move_payload(coords, next_id);
         }
-        let mut zone = self.get_zone_mut(&zone_id);
-        let move_result = zone.move_agent(next_id, coords);
-        match move_result {
-            EntityMoved => {},
-             _ => fail!("Agent wasn't moved into zone! Result: {:?}", move_result)
-        }
-        next_id
+        let ed = EntityData {
+            payload: payload,
+            zone_id: zone_id
+        };
+        self.payloads.insert(next_id, ed);
     }
 
     pub fn new_zone(&mut self, size: uint, cb: |&mut Zone|) -> uint {
@@ -144,11 +164,11 @@ impl World {
     }
 
     // Entity lookup
-    pub fn get_agent<'a>(&'a self, id: &uint) -> &'a Agent {
-        self.agents.find(id).expect(format!("Cannot find agent with id {:?}", id))
+    pub fn get_payload<'a>(&'a self, id: &Uuid) -> &'a EntityData<TPayload> {
+        self.payloads.find(id).expect(format!("Cannot find_mut payload with id {:?}", id))
     }
-    pub fn get_agent_mut<'a>(&'a mut self, id: &uint) -> &'a mut Agent {
-        self.agents.find_mut(id).expect(format!("Cannot find_mut agent with id {:?}", id))
+    pub fn get_payload_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut EntityData<TPayload> {
+        self.payloads.find_mut(id).expect(format!("Cannot find_mut payload with id {:?}", id))
     }
     pub fn get_zone<'a>(&'a self, id: uint) -> &'a Zone {
         self.zones.find(&id).expect(format!("Cannot find zone with id {:?}", id))
@@ -163,25 +183,20 @@ impl World {
 
     }
 
-    // Entity Traversal
-    pub fn traverse_agent(&mut self, aid: uint, dir: TraversalDirection) -> ZoneTraversalResult {
-        let delta = match dir {
+    /// Try traversing from one `GlobalCoord` to another.
+    pub fn traverse(&self, src: GlobalCoord, dir: TraversalDirection) -> ZoneTraversalResult {
+        let delta: (int, int) = match dir {
             North => (0, -1),
             West => (-1, 0),
             South => (0, 1),
             East => (1, 0),
-            NoDirection => fail!("NoDirection not allowed in traverse_agent()")
+            NoDirection => fail!("NoDirection not allowed in traverse()")
         };
-        let curr_zone_id = {
-            let agent = self.get_agent(&aid);
-            let curr_zone = self.get_zone(agent.zone_id);
-            curr_zone.id
-        };
+        let curr_zone_id = src.zone_id;
         let (dest_zone_id, dest_coords) = {
-            let agent = self.get_agent(&aid);
-            let curr_zone = self.get_zone(agent.zone_id);
+            let curr_zone = self.get_zone(curr_zone_id);
             let (d_x, d_y) = delta;
-            let curr_coords = *curr_zone.get_agent_coords(&aid);
+            let curr_coords = src.coords;
             let (curr_x, curr_y) = curr_coords;
             let traversing_portal = {
                 let curr_tile = curr_zone.get_tile(curr_coords);
@@ -203,25 +218,44 @@ impl World {
                 let other_zone = self.get_zone(ozid);
                 let (ocx, ocy) = *other_zone.get_portal_coords(&pid);
                 let oc = match td {
-                    North => (ocx, ocy-1),
-                    East => (ocx+1, ocy),
-                    South => (ocx, ocy+1),
-                    West => (ocx-1, ocy),
-                    NoDirection => fail!("NoDirection not allowed in traverse_agent()")
+                    North => (ocx as int, ocy as int-1 as int),
+                    East => (ocx as int+1 as int, ocy as int),
+                    South => (ocx as int, ocy as int+1 as int),
+                    West => (ocx as int-1 as int, ocy as int),
+                    NoDirection => fail!("NoDirection not allowed in traverse()")
                 };
                 println!("other zone: {:?}, this zone: {:?}", ozid, curr_zone_id);
                 (ozid, oc)
             } else {
-                let dest_coords = (curr_x + d_x, curr_y + d_y);
+                let dest_coords = (curr_x as int + d_x, curr_y as int + d_y);
                 (curr_zone_id, dest_coords)
             }
         };
+        /*
         if dest_zone_id != curr_zone_id {
             let old_zone = self.get_zone_mut(&curr_zone_id);
             old_zone.remove_agent(aid);
         }
         self.move_agent(aid, dest_zone_id, dest_coords)
+        */
+        let dest_zone = self.get_zone(dest_zone_id);
+        let (dx, dy) = dest_coords;
+        println!("Dir {:?} Delta {:?} src: {:?} dest: {:?}",dir,delta,src.coords, dest_coords);
+        if dx < 0 || dy < 0 || dx >= dest_zone.size as int|| dy >= dest_zone.size as int{
+            DestinationOutsideBounds
+        } else {
+            let clean_dc = (dx as uint, dy as uint);
+            let dest_tile = dest_zone.get_tile(clean_dc);
+            if !dest_tile.passable {
+                DestinationBlocked
+            }
+            else {
+                Destination(GlobalCoord::new(dest_zone_id, clean_dc))
+            }
+        }
+            
     }
+/*
     pub fn move_agent(&mut self, aid: uint, zid: uint, dst: (uint, uint)) -> ZoneTraversalResult {
         let mut curr_zone_id = {
             let agent = self.get_agent(&aid);
@@ -238,4 +272,5 @@ impl World {
         let mut zone = self.get_zone_mut(&zid);
         zone.move_agent(aid, dst)
     }
+*/
 }
