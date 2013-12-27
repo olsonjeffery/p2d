@@ -19,13 +19,15 @@ The Author says: I created this repo to share the (generalizable) work that I've
 - data-structures representing variable-width sprite fonts and basic API for drawing a line of text, in a given `p2d::sprite::SpriteFontSheet` at a given screen location
 - A `World<T>` data structure, consisting of a number of `Zone`s, `Tile`s, `Portal`s and `Payload`s
     - `Zone`s are defined as being an arbitrary size (currently only one size dimension is specified). This initializes the zone as being filled with a number of `Tile`s equal to the `Zone`'s size, squared
-    - `Tile`s make up the contents of a `Zone`. They current consist of information about `SpriteTiles` that should be rendered in the `Tile`'s location, as well as FOV/movement info and weak references, via id, to optional `Portal` and/or `Payload` components
+    - `Tile`s make up the contents of a `Zone`. They currently consist of information about `SpriteTiles` that should be rendered in the `Tile`'s location, as well as FOV/movement info and weak references, via id, to optional `Portal` and/or `Payload` components
     - `Portal`s connect two `Zone`s together. They consist of two `Zone` identifiers, two `coord` fields (of type `(uint, uint)`) and two `TraversalDirection` fields indicating which direction the respective `Portal`s "point in"
     - `Payload`s are the `T` in `World<T>`. Each `Tile` carries an optional weak references to a `Payload` which kept, by `Uuid` identifier, in the top-level of the world. Eventually, all of the non-`Portal`/`Payload`-related fields within the `Tile` (`fov`, `passable`, `sprites`) will move into the `Payload` and be supported in their respective APIs by demanding that any `World<T>` passed into the APIs have its `Payload` type impl some trait that enables exposing germane capabilities to those APIs
+    - A `World<T>` is the top level type in the above-described graph. It keeps `HashMap`-based collections of `Zone`s, `Portal`s and `Payload`s.
 
 #### Future Work
 
 - Further refinement of the font-drawing API (such as rendering a block of text in a word-wrapped fashion within a bounding box.. what about scrolling.. ?)
+- Support for `Decodable`/`Encodable` with the `World<T>` object graph. This will most likely involve intermediate types for `World<T>`, `Zone`, etc that consist of simple vectors of child objets, instead of the `HashMap`s as they are, normally, and API to create well-populated `World<T>` objects from a simplified serialized format (most likely JSON)
 - Data structures simpler than `World<T>` for representing non-fancy tile/grid structures like UX menus, etc and API for drawing them
 - Further generalization of `World<T>` to pull out everything from `Tile` except the `portal_id` and `payload_id` fields
   - Situations that call for interacting with `Tile` payloads in any way (like in `p2d::fov` or `p2dux::gfx::draw`) would take a parameterized strategy trait impl to pull out the `Payload` and make decisions based on its contents
