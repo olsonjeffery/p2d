@@ -14,10 +14,14 @@ The Author says: I created this repo to share the (generalizable) work that I've
 
 - Load and keep a `p2dux::gfx::TextureSheet`, whose input is defined by `p2d::sprite::SpriteSheet`, in memory from a `.bmp` file on the filesystem
 - A `TextureSheet` can draw a portion of itself, as defined in `p2d::sprite::SpriteSheet`, to the screen
-- A `World<T>` data structure, consisting of a number of `Zone`s, `Portal`s and `Payload`s
 - Some utility API around interacting with the above items for the purpose of field-of-view discovery and drawing-to-the-screen
 - A rough pattern about UX/input management that also forms the basis of the main loop
 - data-structures representing variable-width sprite fonts and basic API for drawing a line of text, in a given `p2d::sprite::SpriteFontSheet` at a given screen location
+- A `World<T>` data structure, consisting of a number of `Zone`s, `Tile`s, `Portal`s and `Payload`s
+    - `Zone`s are defined as being an arbitrary size (currently only one size dimension is specified). This initializes the zone as being filled with a number of `Tile`s equal to the `Zone`'s size, squared
+    - `Tile`s make up the contents of a `Zone`. They current consist of information about `SpriteTiles` that should be rendered in the `Tile`'s location, as well as FOV/movement info and weak references, via id, to optional `Portal` and/or `Payload` components
+    - `Portal`s connect two `Zone`s together. They consist of two `Zone` identifiers, two `coord` fields (of type `(uint, uint)`) and two `TraversalDirection` fields indicating which direction the respective `Portal`s "point in"
+    - `Payload`s are the `T` in `World<T>`. Each `Tile` carries an optional weak references to a `Payload` which kept, by `Uuid` identifier, in the top-level of the world. Eventually, all of the non-`Portal`/`Payload`-related fields within the `Tile` (`fov`, `passable`, `sprites`) will move into the `Payload` and be supported in their respective APIs by demanding that any `World<T>` passed into the APIs have its `Payload` type impl some trait that enables exposing germane capabilities to those APIs
 
 #### Future Work
 
