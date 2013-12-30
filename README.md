@@ -45,7 +45,7 @@ The Author says: I created this repo to share the (generalizable) work that I've
 
 ## Build
 
-It is currently building w/ `rustc` 0.9-pre (41cbbb6).
+It is currently building w/ `rustc` 0.9-pre (aa5d779).
 
 Since `p2dux` relies on `rust-sdl2`, you have to keep it's build-time configuration requirements in mind when building crates in the `p2d` repo.
 

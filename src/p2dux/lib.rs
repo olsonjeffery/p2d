@@ -5,10 +5,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[link(name = "p2dux#0.1",
-       uuid = "263e35b2-0727-11e3-b3dd-29219a890b3c",
-       url = "http://github.com/olsonjeffery/p2d")];
-#[crate_id="p2dux#0.1"];
+#[crate_id="http://github.com/olsonjeffery/p2d#p2dux:0.0.1"];
 #[desc = "All UX/Frontend-specific code in the p2d 2D-graphics library"];
 #[license = "MIT"];
 
@@ -89,7 +86,7 @@ pub trait UxManager<TOut> {
                     if (now_time < next_frame) {
                         let sleep_gap = next_frame - now_time;
                         //println!("sleeping for {}", sleep_gap);
-                        timer::sleep(sleep_gap);
+                        //timer::sleep(sleep_gap);
                     }
                 },
                 Some(s) => { exit_val = Some(s); break }
