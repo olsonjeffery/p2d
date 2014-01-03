@@ -24,6 +24,7 @@ use sdl2::keycode::*;
 use p2d::world::{World, Payload};
 
 pub mod gfx;
+pub mod ux;
 
 pub enum UxEvent {
     Continue,

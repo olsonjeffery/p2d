@@ -53,6 +53,9 @@ impl GameDisplay {
         let (r, g, b) = rgb;
         self.renderer.set_draw_color(sdl2::pixels::RGB(r, g, b));
     }
+    pub fn set_draw_sdl2_color(&self, rgb: sdl2::pixels::Color) {
+        self.renderer.set_draw_color(rgb);
+    }
 }
 
 impl Drop for GameDisplay {

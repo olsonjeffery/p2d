@@ -12,8 +12,9 @@ use extra::uuid::Uuid;
 use super::GameDisplay;
 use super::texture::TextureSheets;
 use p2d::world::{GlobalCoord, Payload, World, RelativeCoord, EntityData};
-use p2d::sprite::{SpriteFontSheet, SpriteSheet};
+use p2d::sprite::SpriteSheet;
 use p2d::zone::{Zone, Tile};
+use ux::SpriteFontSheet;
 
 //pub type Payload_Processor<'a, T> = 'b |w: &'a World, display: &'a GameDisplay,
 //    base: (int, int), plid: Uuid| -> bool;
@@ -73,17 +74,5 @@ pub fn draw_tiles_from<'a, T: Send + Payload>(world: &World<T>, visible_tiles: &
         // need to account multiple zones/reference points w/ portalling..
         draw_grid_tile(tile, world, display, base_x, base_y, tc.gx, tc.gy,
                        payload_cb);
-    }
-}
-
-pub fn draw_font_line(display: &GameDisplay, font: &SpriteFontSheet, coords: (int, int), text: ~str) {
-    let (mut cx, cy) = coords;
-    let sheet = display.sheets.get(&font.get_sheet());
-    let text_slice = text.slice_from(0);
-    for c in text_slice.chars() {
-        let font_sprite = font.sprite_for(&c).expect(format!("Sprite not found for {:?}! Shouldn't happen...", c));
-        let (fsx, fsy) = font_sprite.size;
-        sheet.draw_tile(display.renderer, font_sprite, (cx, cy), font_sprite.size);
-        cx += (fsx+2) as int;
     }
 }

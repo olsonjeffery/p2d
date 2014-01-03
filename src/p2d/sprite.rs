@@ -30,8 +30,3 @@ impl Clone for SpriteTile {
 impl SpriteTile {
     pub fn stub() -> SpriteTile { SpriteTile { sheet: ~"", coords: (0,0), size:(0,0) } }
 }
-
-pub trait SpriteFontSheet {
-    fn get_sheet(&self) -> ~str;
-    fn sprite_for<'a>(&'a self, c: &char) -> Option<&'a SpriteTile>;
-}
