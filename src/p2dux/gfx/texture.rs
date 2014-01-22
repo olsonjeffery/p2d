@@ -24,8 +24,9 @@ pub struct TextureSheet {
 pub type TextureSheets = HashMap<~str, TextureSheet>;
 
 impl TextureSheet {
-    pub fn new(renderer: &Renderer, path: &Path, name: ~str) -> TextureSheet {
-        let surface = match Surface::from_bmp(path) {
+    pub fn new(renderer: &Renderer, path_str: &~str, name: ~str) -> TextureSheet {
+        let path = Path::new(path_str.as_slice());
+        let surface = match Surface::from_bmp(&path) {
             Ok(s) => s,
             Err(msg) => fail!("new_sprite_from: Couldn't create surface: "+msg)
         };

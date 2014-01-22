@@ -8,24 +8,44 @@
 use std::hashmap::HashMap;
 use std::option::{Some, None};
 use extra::uuid::Uuid;
+use extra::serialize::{Encoder, Decoder, Encodable, Decodable};
 
 use super::GameDisplay;
 use super::texture::TextureSheets;
-use p2d::world::{GlobalCoord, Payload, World, RelativeCoord, EntityData};
-use p2d::sprite::SpriteSheet;
+use p2d::world::{GlobalCoord, Payloadable, World, RelativeCoord};
+use p2d::sprite::{SpriteTile, SpriteSheet};
 use p2d::zone::{Zone, Tile};
 use ux::SpriteFontSheet;
 
-//pub type Payload_Processor<'a, T> = 'b |w: &'a World, display: &'a GameDisplay,
-//    base: (int, int), plid: Uuid| -> bool;
 pub type Payload_Processor<T> = fn(&World<T>, &GameDisplay, (int, int), (int, int), Uuid);
+
+pub trait DrawableItem {
+    fn get_sprites<'a>(&self) -> &'a [SpriteTile];
+
+    fn draw(&self, world: &World<Self>, display: &GameDisplay,
+                          base: (int, int), offset: (int, int)) {
+        let (base_x, base_y) = base;
+        let (offset_x, offset_y) = offset;
+        let sprites = self.get_sprites();
+        let sheets = &display.sheets;
+        for st in sprites.iter() {
+            let sheet = sheets.get(&st.sheet);
+            let (tile_size_x, tile_size_y) = st.size;
+            // should only need to get screen_x once this whole thing..
+            // .. this implies getting rid of offset..
+            let screen_x = base_x + (offset_x * tile_size_x as int) as int;
+            let screen_y = base_y + (offset_y * tile_size_y as int) as int;
+            sheet.draw_tile(display.renderer, st,
+                            (screen_x, screen_y), st.size);
+        }
+    }
+}
 
 // so this is assuming uniform tile size amongst a group of tiles in a
 // Zone
-pub fn draw_grid_tile<T: Send + Payload>(t: &Tile, world: &World<T>,
+pub fn draw_grid_tile<T:DrawableItem>(t: &Tile<T>, world: &World<T>,
                                          display: &GameDisplay, base_x: int,
-                                         base_y: int, offset_x: int, offset_y: int,
-                                         payload_cb: Payload_Processor<T>) {
+                                         base_y: int, offset_x: int, offset_y: int) {
     let sheets = &display.sheets;
     // draw tile sprites
     for st in t.sprites.iter() {
@@ -37,34 +57,14 @@ pub fn draw_grid_tile<T: Send + Payload>(t: &Tile, world: &World<T>,
         sheet.draw_tile(display.renderer, st,
                         (screen_x, screen_y), st.size);
     }
-    // draw object sprite
-    // ...
-
-    // draw actor sprite
+    // draw actor sprite(s) .. eventually the tile sprite drawing will
+    // move into here as well..
     let base = (base_x, base_y);
     let offset = (offset_x, offset_y);
-    match t.payload_id {
-        None => {},
-        Some(id) => {
-            payload_cb(world, display, base, offset, id);
-            /*
-            let agent = world.get_agent(&id);
-            // animation stuff goes here.. curr time/tick fed in as a
-            // param.. ?
-            let st = &agent.animations[0];
-            let sheet = sheets.get(&st.sheet);
-            let (tile_size_x, tile_size_y) = st.size;
-            // should only need to get screen_x once this whole thing..
-            let screen_x = base_x + (zone_x * tile_size_x as int) as int;
-            let screen_y = base_y + (zone_y * tile_size_x as int) as int;
-            sheet.draw_tile(display.renderer, st,
-                            (screen_x, screen_y), st.size);
-            */
-        }
-    }
+    t.payload.draw(world, display, base, offset);
 }
 
-pub fn draw_tiles_from<'a, T: Send + Payload>(world: &World<T>, visible_tiles: &~[RelativeCoord], origin: (int, int), display: &GameDisplay, payload_cb: Payload_Processor<T>) {
+pub fn draw_tiles_from<'a, D: Decoder, E: Encoder, T: Decodable<D> + Encodable<E> + Send + Payloadable + DrawableItem>(world: &World<T>, visible_tiles: &~[RelativeCoord], origin: (int, int), display: &GameDisplay) {
     // screen center
     let (base_x, base_y) = origin;
     for tc in visible_tiles.iter() {
@@ -72,7 +72,6 @@ pub fn draw_tiles_from<'a, T: Send + Payload>(world: &World<T>, visible_tiles: &
         //println!("draw_agent_los: zid:{:} {:?}", tc.zone_id, (tc.lx, tc.ly));
         let tile = zone.get_tile((tc.lx, tc.ly));
         // need to account multiple zones/reference points w/ portalling..
-        draw_grid_tile(tile, world, display, base_x, base_y, tc.gx, tc.gy,
-                       payload_cb);
+        draw_grid_tile(tile, world, display, base_x, base_y, tc.gx, tc.gy);
     }
 }
