@@ -6,10 +6,11 @@
 // except according to those terms.
 
 use std::hashmap::{HashMap, HashSet};
-use world::{Payload, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
+use extra::serialize::{Decoder, Encoder, Decodable, Encodable};
+use world::{Payloadable, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
 use zone::{Zone, Tile, Void};
 
-pub fn compute<T: Send + Payload>(world: &World<T>, focus: RelativeCoord, radius: uint,
+pub fn compute<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>>(world: &World<TPayload>, focus: RelativeCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
                 -> ~[RelativeCoord] {
     let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
@@ -101,7 +102,7 @@ fn abs(a: int) -> uint {
     if a < 0 { (a * -1) as uint } else { a as uint }
 }
 
-fn compute_octant<T: Send + Payload>(world: &World<T>, zone: &Zone, position: (uint, uint),
+fn compute_octant<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>>(world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
                 offset: (int, int), max_radius: uint, from_pid: uint,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
@@ -110,7 +111,7 @@ fn compute_octant<T: Send + Payload>(world: &World<T>, zone: &Zone, position: (u
             ~[(uint, (uint, uint), (int, int), uint, uint, TraversalDirection)]) {
     let mut visible_tiles = HashSet::new();
     let mut pending_zones = HashSet::new();
-    let stub_tile = Tile::stub(0);
+    let stub_tile = Tile::stub();
     let padding = 34 as int;
     let (raw_px, raw_py) = position;
     let (raw_px, raw_py) = (raw_px as int, raw_py as int);
@@ -387,7 +388,7 @@ fn compute_octant<T: Send + Payload>(world: &World<T>, zone: &Zone, position: (u
      pending_zones.move_iter().to_owned_vec())
 }
 
-fn build_pending_zone_entry<T:Send + Payload>(world: &World<T>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
+fn build_pending_zone_entry<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>>(world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
     let portal = world.get_portal(pid);
     let (ozid, from_dir) = portal.info_from(zid);
     let other_zone = world.get_zone(ozid);

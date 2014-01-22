@@ -14,8 +14,10 @@ use std::option::{None, Some};
 use std::vec::with_capacity;
 use std::hashmap::HashMap;
 use extra::uuid::Uuid;
+use extra::serialize::{Decoder, Encoder, Decodable, Encodable};
+
 use super::sprite::SpriteTile;
-use super::world::{TraversalDirection, GlobalCoord};
+use super::world::{TraversalDirection, GlobalCoord, Payloadable};
 
 pub fn coords_to_idx(coords: (uint, uint), size: uint) -> uint {
     let (x, y) = coords;
@@ -28,6 +30,7 @@ pub enum ZoneTraversalResult {
     DestinationOccupied(Uuid),
     DestinationOutsideBounds,
 }
+#[deriving(Encodable, Decodable)]
 pub enum FovType {
     Blocking,
     Transparent,
@@ -41,52 +44,54 @@ impl FovType {
         }
     }
 }
-pub struct Tile {
-    id: uint,
+
+#[deriving(Encodable, Decodable)]
+pub struct Tile<TPayload> {
     passable: bool,
     fov: FovType,
     sprites: ~[SpriteTile],
-    payload_id: Option<Uuid>,
+    payload: TPayload,
     portal_id: Option<uint>
 }
 
-impl Tile {
-    pub fn stub(id: uint) -> Tile {
+impl<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>> Tile<TPayload> {
+    pub fn stub() -> Tile<TPayload> {
         Tile {
-            id: id,
             passable: false,
             fov: Void,
             sprites: ~[],
-            payload_id: None,
+            payload: Payloadable::stub(),
             portal_id: None
         }
     }
+
+    pub fn get_payload<'a>(&'a self) -> &'a TPayload {
+        &self.payload
+    }
 }
 
-pub struct Zone {
+#[deriving(Encodable, Decodable)]
+pub struct Zone<TPayload> {
     id: uint,
     size: uint,
-    last_tile_id: uint,
-    all_tiles: ~[Tile],
+    all_tiles: ~[Tile<TPayload>],
     priv payload_coords: HashMap<Uuid, (uint, uint)>,
     priv portal_coords: HashMap<uint, (uint, uint)>
 }
 
-impl Zone {
-    pub fn new(size: uint, id: uint) -> Zone {
+impl<D: Decoder, E: Encoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>> Zone<TPayload> {
+    pub fn new(size: uint, id: uint) -> Zone<TPayload> {
         // size must be a power of 2
         let mut z = Zone {
             id: id,
             size: size,
-            last_tile_id: 0,
             all_tiles: with_capacity(size*size),
             payload_coords: HashMap::new(),
             portal_coords: HashMap::new()
         };
         (size*size).times(|| {
-            let next_id = z.last_tile_id + 1;
-            z.all_tiles.push(Tile::stub(next_id));
-            z.last_tile_id = next_id;
+            let tile: Tile<TPayload> = Tile::stub();
+            z.all_tiles.push(tile);
         });
         z
     }
@@ -107,27 +112,19 @@ impl Zone {
     ///////////////////////
     // Tile related
     ///////////////////////
-    pub fn tile_at_idx<'a>(&'a self, idx: uint) -> &'a Tile {
+    pub fn tile_at_idx<'a>(&'a self, idx: uint) -> &'a Tile<TPayload> {
         &self.all_tiles[idx]
     }
-    pub fn tile_at_idx_mut<'a>(&'a mut self, idx: uint) -> &'a mut Tile {
+    pub fn tile_at_idx_mut<'a>(&'a mut self, idx: uint) -> &'a mut Tile<TPayload> {
         &mut self.all_tiles[idx]
     }
-    pub fn tile_at(&self, coords: (uint, uint), cb: |&Tile|) {
-        let idx = coords_to_idx(coords, self.size);
-        cb(self.tile_at_idx(idx));
-    }
-    pub fn get_tile<'a>(&'a self, coords: (uint, uint)) -> &'a Tile {
+    pub fn get_tile<'a>(&'a self, coords: (uint, uint)) -> &'a Tile<TPayload> {
         let idx = coords_to_idx(coords, self.size);
         self.tile_at_idx(idx)
     }
-    pub fn get_tile_mut<'a>(&'a mut self, coords: (uint, uint)) -> &'a mut Tile {
+    pub fn get_tile_mut<'a>(&'a mut self, coords: (uint, uint)) -> &'a mut Tile<TPayload> {
         let idx = coords_to_idx(coords, self.size);
         self.tile_at_idx_mut(idx)
-    }
-    pub fn tile_at_mut(&mut self, coords: (uint, uint), cb: |&mut Tile|) {
-        let idx = coords_to_idx(coords, self.size);
-        cb(self.tile_at_idx_mut(idx));
     }
     ///////////////////////
     // adding/moving entities
@@ -147,7 +144,8 @@ impl Zone {
         }
         self.portal_coords.insert(pid, coords);
     }
-    pub fn move_payload(&mut self, coords: (uint, uint), plid: Uuid) -> ZoneTraversalResult {
+    /*
+    pub fn gone_move_payload(&mut self, coords: (uint, uint), plid: Uuid) -> ZoneTraversalResult {
         let in_bounds = self.coords_in_bounds(coords);
         if !in_bounds {
             DestinationOutsideBounds
@@ -183,43 +181,5 @@ impl Zone {
         let t = self.get_tile_mut(coords);
         t.payload_id = None;
     }
-/*
-    pub fn remove_agent(&mut self, agent_id: uint) {
-        match self.agent_coords.pop(&agent_id) {
-            Some(c) => self.tile_at_mut(c, |t| {
-                t.agent_id = None;
-            }),
-            None => {}
-        }
-    }
-    pub fn move_agent(&mut self, agent_id: uint, coords: (uint, uint)) -> ZoneTraversalResult {
-        let in_bounds = self.coords_in_bounds(coords);
-        if in_bounds {
-            let (is_occupied, is_passable) = {
-                let target_tile = self.get_tile(coords);
-                (target_tile.agent_id, target_tile.passable)
-            };
-            if is_occupied.is_some() {
-                return DestinationOccupied(is_occupied.unwrap());
-            }
-            if !is_passable {
-                return DestinationBlocked
-            }
-            // clear their previous position..
-            let maybe_agent_in_this_zone = self.agent_coords.pop(&agent_id);
-            match maybe_agent_in_this_zone {
-                Some(c) => self.tile_at_mut(c, |t| {
-                    t.agent_id = None;
-                }),
-                None => {}
-            }
-            self.agent_coords.find_or_insert(agent_id, coords);
-            let target_tile = self.get_tile_mut(coords);
-            target_tile.agent_id = Some(agent_id);
-            EntityMoved
-        } else {
-            DestinationOutsideBounds
-        }
-    }
-*/
+    */
 }

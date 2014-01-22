@@ -6,12 +6,15 @@
 // except according to those terms.
 
 use std::path::Path;
+use extra::serialize::{Encodable, Decodable};
 
+#[deriving(Encodable, Decodable)]
 pub struct SpriteSheet {
-    path: Path,
+    path: ~str,
     name: ~str
 }
 
+#[deriving(Encodable, Decodable)]
 pub struct SpriteTile {
     sheet: ~str,
     coords: (uint, uint),

@@ -11,6 +11,8 @@ use std::cmp::{Eq, TotalEq};
 use std::to_bytes::{Cb, IterBytes};
 use std::hashmap::{HashMap, HashSet};
 use extra::uuid::Uuid;
+use extra::serialize::{Encoder, Decoder, Decodable, Encodable};
+
 use super::zone::{Zone, ZoneTraversalResult, Destination, DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
 use super::fov;
@@ -36,23 +38,16 @@ impl TraversalDirection {
     }
 }
 
-pub trait Payload {
+pub trait Payloadable {
+    fn stub() -> Self;
     fn get_id(&self) -> Uuid;
 }
 
-pub struct EntityData<TPayload> {
-    zone_id: uint,
-    payload: TPayload
-}
-
 pub struct World<TPayload> {
-    zones: HashMap<uint, Zone>,
-    payloads: HashMap<Uuid, EntityData<TPayload>>,
+    zones: HashMap<uint, Zone<TPayload>>,
     portals: HashMap<uint, Portal>,
-    latest_agent_id: uint,
     latest_zone_id: uint,
     latest_portal_id: uint,
-    starting_agent: uint
 }
 
 #[deriving(Eq, TotalEq, IterBytes)]
@@ -111,21 +106,19 @@ impl TotalEq for RelativeCoord {
     }
 }
 
-impl<TPayload: Send + Payload> World<TPayload> {
+impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encodable<E>> World<TPayload> {
     pub fn new() -> World<TPayload> {
         let mut w = World {
             zones: HashMap::new(),
-            payloads: HashMap::new(),
             portals: HashMap::new(),
-            latest_agent_id: 0,
             latest_zone_id: 0,
             latest_portal_id: 0,
-            starting_agent: 0
         };
         w
     }
 
     // Entity creation
+    /*
     pub fn new_payload(&mut self, zone_id: uint, coords: (uint, uint), payload: TPayload) {
         let next_id = payload.get_id();
         if self.payloads.contains_key(&next_id) {
@@ -141,10 +134,11 @@ impl<TPayload: Send + Payload> World<TPayload> {
         };
         self.payloads.insert(next_id, ed);
     }
+    */
 
-    pub fn new_zone(&mut self, size: uint, cb: |&mut Zone|) -> uint {
+    pub fn new_zone(&mut self, size: uint, cb: |&mut Zone<TPayload>|) -> uint {
         let next_id = self.latest_zone_id + 1;
-        let mut z = Zone::new(size, next_id);
+        let mut z = Zone::<D, E, TPayload>::new(size, next_id);
         self.zones.insert(next_id, z);
         self.latest_zone_id = next_id;
         cb(self.zones.get_mut(&next_id));
@@ -171,17 +165,19 @@ impl<TPayload: Send + Payload> World<TPayload> {
     }
 
     // Entity lookup
+    /*
     pub fn get_payload<'a>(&'a self, id: &Uuid) -> &'a EntityData<TPayload> {
         self.payloads.find(id).expect(format!("Cannot find_mut payload with id {:?}", id))
     }
     pub fn get_payload_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut EntityData<TPayload> {
         self.payloads.find_mut(id).expect(format!("Cannot find_mut payload with id {:?}", id))
     }
-    pub fn get_zone<'a>(&'a self, id: uint) -> &'a Zone {
+    */
+    pub fn get_zone<'a>(&'a self, id: uint) -> &'a Zone<TPayload> {
         self.zones.find(&id).expect(format!("Cannot find zone with id {:?}", id))
 
     }
-    pub fn get_zone_mut<'a>(&'a mut self, id: &uint) -> &'a mut Zone {
+    pub fn get_zone_mut<'a>(&'a mut self, id: &uint) -> &'a mut Zone<TPayload> {
         self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id))
     }
 
