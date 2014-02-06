@@ -5,14 +5,15 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[crate_id="http://github.com/olsonjeffery/p2d#p2dux:0.0.1"];
+#[crate_id="p2dux#0.1"];
+#[crate_type="dylib"];
 #[desc = "All UX/Frontend-specific code in the p2d 2D-graphics library"];
 #[license = "MIT"];
 
 #[feature(globs)];
 
-extern mod extra;
-extern mod sdl2;
+extern mod extra = "extra#0.10-pre";
+extern mod sdl2 = "sdl2#0.0.1";
 extern mod p2d;
 use std::option::{Option, Some, None};
 use std::io::timer;

@@ -5,8 +5,11 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use extra::serialize::{Decodable, Encodable};
+
 use super::world::{TraversalDirection, North, East, South, West};
 
+#[deriving(Encodable, Decodable)]
 pub struct Portal {
     id: uint,
     a_zid: uint,

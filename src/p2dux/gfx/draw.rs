@@ -68,7 +68,7 @@ pub fn draw_tiles_from<'a, D: Decoder, E: Encoder, T: Decodable<D> + Encodable<E
     // screen center
     let (base_x, base_y) = origin;
     for tc in visible_tiles.iter() {
-        let zone = world.get_zone(tc.zone_id);
+        let zone = world.get_zone(&tc.zone_id);
         //println!("draw_agent_los: zid:{:} {:?}", tc.zone_id, (tc.lx, tc.ly));
         let tile = zone.get_tile((tc.lx, tc.ly));
         // need to account multiple zones/reference points w/ portalling..

@@ -5,13 +5,14 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[crate_id="http://github.com/olsonjeffery/p2d#p2d:0.0.1"];
+#[crate_id="p2d#0.1"];
+#[crate_type="dylib"];
 #[desc = "Backend/graphics-agnostic code for the p2d 2D graphics library"];
 #[license = "MIT"];
 
 #[feature(globs)];
 
-extern mod extra;
+extern mod extra = "extra#0.10-pre";
 
 pub mod world;
 pub mod zone;

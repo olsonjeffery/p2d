@@ -11,14 +11,13 @@ use std::cmp::{Eq, TotalEq};
 use std::to_bytes::{Cb, IterBytes};
 use std::hashmap::{HashMap, HashSet};
 use extra::uuid::Uuid;
-use extra::serialize::{Encoder, Decoder, Decodable, Encodable};
+use extra::serialize::{Decodable, Encodable};
 
 use super::zone::{Zone, ZoneTraversalResult, Destination, DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
 use super::fov;
 
-#[deriving(Eq)]
-#[deriving(IterBytes)]
+#[deriving(Decodable, Encodable, Eq,IterBytes)]
 pub enum TraversalDirection {
     North,
     East,
@@ -43,6 +42,7 @@ pub trait Payloadable {
     fn get_id(&self) -> Uuid;
 }
 
+#[deriving(Decodable, Encodable)]
 pub struct World<TPayload> {
     zones: HashMap<uint, Zone<TPayload>>,
     portals: HashMap<uint, Portal>,
@@ -106,7 +106,7 @@ impl TotalEq for RelativeCoord {
     }
 }
 
-impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encodable<E>> World<TPayload> {
+impl<TPayload: Send + Payloadable> World<TPayload> {
     pub fn new() -> World<TPayload> {
         let mut w = World {
             zones: HashMap::new(),
@@ -138,7 +138,7 @@ impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encod
 
     pub fn new_zone(&mut self, size: uint, cb: |&mut Zone<TPayload>|) -> uint {
         let next_id = self.latest_zone_id + 1;
-        let mut z = Zone::<D, E, TPayload>::new(size, next_id);
+        let mut z = Zone::<TPayload>::new(size, next_id);
         self.zones.insert(next_id, z);
         self.latest_zone_id = next_id;
         cb(self.zones.get_mut(&next_id));
@@ -165,17 +165,16 @@ impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encod
     }
 
     // Entity lookup
-    /*
-    pub fn get_payload<'a>(&'a self, id: &Uuid) -> &'a EntityData<TPayload> {
-        self.payloads.find(id).expect(format!("Cannot find_mut payload with id {:?}", id))
+    pub fn get_payload<'a>(&'a self, gc: &GlobalCoord) -> &'a TPayload {
+        let zone = self.get_zone(&gc.zone_id);
+        &zone.get_tile(gc.coords).payload
     }
-    pub fn get_payload_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut EntityData<TPayload> {
-        self.payloads.find_mut(id).expect(format!("Cannot find_mut payload with id {:?}", id))
+    pub fn get_payload_mut<'a>(&'a mut self, gc: &GlobalCoord) -> &'a mut TPayload {
+        let zone = self.get_zone_mut(&gc.zone_id);
+        &mut zone.get_tile_mut(gc.coords).payload
     }
-    */
-    pub fn get_zone<'a>(&'a self, id: uint) -> &'a Zone<TPayload> {
-        self.zones.find(&id).expect(format!("Cannot find zone with id {:?}", id))
-
+    pub fn get_zone<'a>(&'a self, id: &uint) -> &'a Zone<TPayload> {
+        self.zones.find(id).expect(format!("Cannot find zone with id {:?}", id))
     }
     pub fn get_zone_mut<'a>(&'a mut self, id: &uint) -> &'a mut Zone<TPayload> {
         self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id))
@@ -197,7 +196,7 @@ impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encod
         };
         let curr_zone_id = src.zone_id;
         let (dest_zone_id, dest_coords) = {
-            let curr_zone = self.get_zone(curr_zone_id);
+            let curr_zone = self.get_zone(&curr_zone_id);
             let (d_x, d_y) = delta;
             let curr_coords = src.coords;
             let (curr_x, curr_y) = curr_coords;
@@ -218,7 +217,7 @@ impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encod
                 let pid = curr_tile.portal_id.expect("None for portal_id.. shouldn't happen.");
                 let portal = self.get_portal(pid);
                 let (ozid, td) = portal.info_from(curr_zone.id);
-                let other_zone = self.get_zone(ozid);
+                let other_zone = self.get_zone(&ozid);
                 let (ocx, ocy) = *other_zone.get_portal_coords(&pid);
                 let oc = match td {
                     North => (ocx as int, ocy as int-1 as int),
@@ -241,7 +240,7 @@ impl<D: Decoder, E: Encoder, TPayload: Send + Payloadable + Decodable<D> + Encod
         }
         self.move_agent(aid, dest_zone_id, dest_coords)
         */
-        let dest_zone = self.get_zone(dest_zone_id);
+        let dest_zone = self.get_zone(&dest_zone_id);
         let (dx, dy) = dest_coords;
         println!("Dir {:?} Delta {:?} src: {:?} dest: {:?}",dir,delta,src.coords, dest_coords);
         if dx < 0 || dy < 0 || dx >= dest_zone.size as int|| dy >= dest_zone.size as int{

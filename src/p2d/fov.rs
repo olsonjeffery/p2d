@@ -10,7 +10,7 @@ use extra::serialize::{Decoder, Encoder, Decodable, Encodable};
 use world::{Payloadable, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
 use zone::{Zone, Tile, Void};
 
-pub fn compute<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>>(world: &World<TPayload>, focus: RelativeCoord, radius: uint,
+pub fn compute<TPayload: Send + Payloadable>(world: &World<TPayload>, focus: RelativeCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
                 -> ~[RelativeCoord] {
     let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
@@ -28,7 +28,7 @@ pub fn compute<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<
     ];
     while pending_zones.len() > 0 {
         let before_len = visible_tiles.len();
-        let (curr_zid, curr_focus, curr_offset, max_radius, from_pid, from_dir) = pending_zones.pop();
+        let (curr_zid, curr_focus, curr_offset, max_radius, from_pid, from_dir) = pending_zones.pop().expect("fov::compute .. popping zone, shouldn't happen");
         // When processing a connected zone, we only do the half of the screen
         // that we'll see based on the direction into which we arrived at the portal
         let mut octants_slice = match from_dir {
@@ -56,7 +56,7 @@ pub fn compute<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<
             }),
         };
         println!("mrpas in zid:{:?} from_dir:{:?} at fc:{:?} gx:{:?}", curr_zid, from_dir, curr_focus,curr_offset);
-        let zone = world.get_zone(curr_zid);
+        let zone = world.get_zone(&curr_zid);
         // always insert focus pos, then check for portal at starting pos
         if from_pid == 0 {
             visible_tiles.insert(RelativeCoord::new(curr_zid, curr_focus, curr_offset));
@@ -102,7 +102,7 @@ fn abs(a: int) -> uint {
     if a < 0 { (a * -1) as uint } else { a as uint }
 }
 
-fn compute_octant<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>>(world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
+fn compute_octant<TPayload: Send + Payloadable>(world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
                 offset: (int, int), max_radius: uint, from_pid: uint,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
@@ -388,10 +388,10 @@ fn compute_octant<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodab
      pending_zones.move_iter().to_owned_vec())
 }
 
-fn build_pending_zone_entry<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>>(world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
+fn build_pending_zone_entry<TPayload: Send + Payloadable>(world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
     let portal = world.get_portal(pid);
     let (ozid, from_dir) = portal.info_from(zid);
-    let other_zone = world.get_zone(ozid);
+    let other_zone = world.get_zone(&ozid);
     let oc = other_zone.get_portal_coords(&pid);
     println!("pushing new ze: zid:{:?} focus:{:?} offset:{:?}", ozid, oc, this_gx);
     (ozid, *oc, this_gx, remaining_radius, pid, from_dir)

@@ -14,7 +14,7 @@ use std::option::{None, Some};
 use std::vec::with_capacity;
 use std::hashmap::HashMap;
 use extra::uuid::Uuid;
-use extra::serialize::{Decoder, Encoder, Decodable, Encodable};
+use extra::serialize::{Decodable, Encodable};
 
 use super::sprite::SpriteTile;
 use super::world::{TraversalDirection, GlobalCoord, Payloadable};
@@ -54,7 +54,7 @@ pub struct Tile<TPayload> {
     portal_id: Option<uint>
 }
 
-impl<E: Encoder, D: Decoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>> Tile<TPayload> {
+impl<TPayload: Send + Payloadable> Tile<TPayload> {
     pub fn stub() -> Tile<TPayload> {
         Tile {
             passable: false,
@@ -79,7 +79,7 @@ pub struct Zone<TPayload> {
     priv portal_coords: HashMap<uint, (uint, uint)>
 }
 
-impl<D: Decoder, E: Encoder, TPayload: Payloadable + Send + Encodable<E> + Decodable<D>> Zone<TPayload> {
+impl<TPayload: Send + Payloadable> Zone<TPayload> {
     pub fn new(size: uint, id: uint) -> Zone<TPayload> {
         // size must be a power of 2
         let mut z = Zone {
@@ -90,7 +90,7 @@ impl<D: Decoder, E: Encoder, TPayload: Payloadable + Send + Encodable<E> + Decod
             portal_coords: HashMap::new()
         };
         (size*size).times(|| {
-            let tile: Tile<TPayload> = Tile::stub();
+            let tile: Tile<TPayload> = Tile::<TPayload>::stub();
             z.all_tiles.push(tile);
         });
         z
