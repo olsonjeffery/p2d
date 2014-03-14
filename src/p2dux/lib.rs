@@ -6,15 +6,17 @@
 // except according to those terms.
 
 #[crate_id="p2dux#0.1"];
-#[crate_type="dylib"];
+#[crate_type="rlib"];
 #[desc = "All UX/Frontend-specific code in the p2d 2D-graphics library"];
 #[license = "MIT"];
 
 #[feature(globs)];
 
 extern mod extra = "extra#0.10-pre";
-extern mod sdl2 = "sdl2#0.0.1";
-extern mod p2d;
+extern mod serialize = "serialize#0.10-pre";
+extern mod uuid = "uuid#0.10-pre";
+extern mod sdl2 = "sdl2";
+extern mod p2d = "p2d";
 use std::option::{Option, Some, None};
 use std::io::timer;
 use extra::time;
@@ -26,6 +28,12 @@ use p2d::world::{World, Payloadable};
 
 pub mod gfx;
 pub mod ux;
+
+mod mac {
+    #[cfg(mac_framework)]
+    #[link(kind="framework", name="SDL2")]
+    extern {}
+}
 
 pub enum UxEvent {
     Continue,

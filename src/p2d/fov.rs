@@ -6,7 +6,7 @@
 // except according to those terms.
 
 use std::hashmap::{HashMap, HashSet};
-use extra::serialize::{Decoder, Encoder, Decodable, Encodable};
+use serialize::{Decoder, Encoder, Decodable, Encodable};
 use world::{Payloadable, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
 use zone::{Zone, Tile, Void};
 

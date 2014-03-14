@@ -13,8 +13,8 @@
 use std::option::{None, Some};
 use std::vec::with_capacity;
 use std::hashmap::HashMap;
-use extra::uuid::Uuid;
-use extra::serialize::{Decodable, Encodable};
+use uuid::Uuid;
+use serialize::{Decodable, Encodable};
 
 use super::sprite::SpriteTile;
 use super::world::{TraversalDirection, GlobalCoord, Payloadable};
@@ -60,9 +60,13 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
             passable: false,
             fov: Void,
             sprites: ~[],
-            payload: Payloadable::stub(),
+            payload: Tile::stub_payload(),
             portal_id: None
         }
+    }
+    
+    pub fn stub_payload() -> TPayload {
+        Payloadable::stub()
     }
 
     pub fn get_payload<'a>(&'a self) -> &'a TPayload {
@@ -89,10 +93,13 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
             payload_coords: HashMap::new(),
             portal_coords: HashMap::new()
         };
-        (size*size).times(|| {
+        let limit = size*size;
+        let mut ctr = 0;
+        while ctr < limit {
             let tile: Tile<TPayload> = Tile::<TPayload>::stub();
             z.all_tiles.push(tile);
-        });
+            ctr += 1;
+        }
         z
     }
     ///////////////////////

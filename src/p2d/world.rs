@@ -10,8 +10,8 @@ use std::libc;
 use std::cmp::{Eq, TotalEq};
 use std::to_bytes::{Cb, IterBytes};
 use std::hashmap::{HashMap, HashSet};
-use extra::uuid::Uuid;
-use extra::serialize::{Decodable, Encodable};
+use uuid::Uuid;
+use serialize::{Decodable, Encodable};
 
 use super::zone::{Zone, ZoneTraversalResult, Destination, DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
@@ -39,7 +39,6 @@ impl TraversalDirection {
 
 pub trait Payloadable {
     fn stub() -> Self;
-    fn get_id(&self) -> Uuid;
 }
 
 #[deriving(Decodable, Encodable)]
@@ -50,7 +49,7 @@ pub struct World<TPayload> {
     latest_portal_id: uint,
 }
 
-#[deriving(Eq, TotalEq, IterBytes)]
+#[deriving(Eq, TotalEq, IterBytes, Clone)]
 pub struct GlobalCoord {
     zone_id: uint,
     coords: (uint, uint)

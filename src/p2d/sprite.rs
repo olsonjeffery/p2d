@@ -6,7 +6,7 @@
 // except according to those terms.
 
 use std::path::Path;
-use extra::serialize::{Encodable, Decodable};
+use serialize::{Decodable, Encodable};
 
 #[deriving(Encodable, Decodable)]
 pub struct SpriteSheet {

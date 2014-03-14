@@ -7,8 +7,8 @@
 
 use std::hashmap::HashMap;
 use std::option::{Some, None};
-use extra::uuid::Uuid;
-use extra::serialize::{Encoder, Decoder, Encodable, Decodable};
+use uuid::Uuid;
+use serialize::{Encoder, Decoder, Encodable, Decodable};
 
 use super::GameDisplay;
 use super::texture::TextureSheets;
@@ -20,7 +20,7 @@ use ux::SpriteFontSheet;
 pub type Payload_Processor<T> = fn(&World<T>, &GameDisplay, (int, int), (int, int), Uuid);
 
 pub trait DrawableItem {
-    fn get_sprites<'a>(&self) -> &'a [SpriteTile];
+    fn get_sprites<'a>(&'a self) -> &'a [SpriteTile];
 
     fn draw(&self, world: &World<Self>, display: &GameDisplay,
                           base: (int, int), offset: (int, int)) {
@@ -64,7 +64,7 @@ pub fn draw_grid_tile<T:DrawableItem>(t: &Tile<T>, world: &World<T>,
     t.payload.draw(world, display, base, offset);
 }
 
-pub fn draw_tiles_from<'a, D: Decoder, E: Encoder, T: Decodable<D> + Encodable<E> + Send + Payloadable + DrawableItem>(world: &World<T>, visible_tiles: &~[RelativeCoord], origin: (int, int), display: &GameDisplay) {
+pub fn draw_tiles_from<'a, T: Send + Payloadable + DrawableItem>(world: &World<T>, visible_tiles: &~[RelativeCoord], origin: (int, int), display: &GameDisplay) {
     // screen center
     let (base_x, base_y) = origin;
     for tc in visible_tiles.iter() {
