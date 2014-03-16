@@ -8,9 +8,28 @@
 use std::hashmap::{HashMap, HashSet};
 use serialize::{Decoder, Encoder, Decodable, Encodable};
 use world::{Payloadable, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
-use zone::{Zone, Tile, Void};
+use zone::{Zone, Tile};
 
-pub fn compute<TPayload: Send + Payloadable>(world: &World<TPayload>, focus: RelativeCoord, radius: uint,
+#[deriving(Clone, Encodable, Decodable)]
+pub enum FovType {
+    Blocking,
+    Transparent,
+    Void
+}
+impl FovType {
+    pub fn allow_los(&self) -> bool {
+        match *self {
+            Transparent | Void => true,
+            Blocking => false
+        }
+    }
+}
+
+pub trait FovItem {
+    fn get_fov(&self) -> FovType;
+}
+
+pub fn compute<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, focus: RelativeCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
                 -> ~[RelativeCoord] {
     let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
@@ -102,7 +121,7 @@ fn abs(a: int) -> uint {
     if a < 0 { (a * -1) as uint } else { a as uint }
 }
 
-fn compute_octant<TPayload: Send + Payloadable>(world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
+fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
                 offset: (int, int), max_radius: uint, from_pid: uint,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
@@ -198,10 +217,10 @@ fn compute_octant<TPayload: Send + Payloadable>(world: &World<TPayload>, zone: &
                 } else {
                     &stub_tile
                 };
-                let is_void = match c_tile.fov {
+                let is_void = match c_tile.payload.get_fov() {
                     Void => true,
                     _ => false };
-                let mut allow_los = c_tile.fov.allow_los();
+                let mut allow_los = c_tile.payload.get_fov().allow_los();
                 let mut visible = true;
                 let mut extended = false;
                 let mut start_slope = processed_cell as f64 * slopes_per_cell;
@@ -234,13 +253,13 @@ fn compute_octant<TPayload: Send + Payloadable>(world: &World<TPayload>, zone: &
                         let zy_tile_trans = if zy >= 0 && zy < wsize_sq as int {
                             //println!("zy{:?} fetch tile_at_idx:{:?}",zy, (x,y));
                             let t = zone.tile_at_idx(zy as uint);
-                            t.fov.allow_los()
+                            t.payload.get_fov().allow_los()
                         } else { true };
                         let zyx = (x-dx) + ((y-dy) * wsize as int);
                         let zyx_tile_trans = if zyx >= 0 && zyx < wsize_sq as int {
                             //println!("zyx:{:?} fetch tile_at_idx:{:?}",zyx, (x,y));
                             let t = zone.tile_at_idx(zyx as uint);
-                            t.fov.allow_los()
+                            t.payload.get_fov().allow_los()
                         } else { true };
                         if (visible &&
                             (!in_fov.contains(&zy) || !zy_tile_trans) &&
@@ -388,7 +407,7 @@ fn compute_octant<TPayload: Send + Payloadable>(world: &World<TPayload>, zone: &
      pending_zones.move_iter().to_owned_vec())
 }
 
-fn build_pending_zone_entry<TPayload: Send + Payloadable>(world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
+fn build_pending_zone_entry<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
     let portal = world.get_portal(pid);
     let (ozid, from_dir) = portal.info_from(zid);
     let other_zone = world.get_zone(&ozid);

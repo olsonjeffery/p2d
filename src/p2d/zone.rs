@@ -30,25 +30,10 @@ pub enum ZoneTraversalResult {
     DestinationOccupied(Uuid),
     DestinationOutsideBounds,
 }
-#[deriving(Encodable, Decodable)]
-pub enum FovType {
-    Blocking,
-    Transparent,
-    Void
-}
-impl FovType {
-    pub fn allow_los(&self) -> bool {
-        match *self {
-            Transparent | Void => true,
-            Blocking => false
-        }
-    }
-}
 
 #[deriving(Encodable, Decodable)]
 pub struct Tile<TPayload> {
     passable: bool,
-    fov: FovType,
     payload: TPayload,
     portal_id: Option<uint>
 }
@@ -57,7 +42,6 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
     pub fn stub() -> Tile<TPayload> {
         Tile {
             passable: false,
-            fov: Void,
             payload: Tile::stub_payload(),
             portal_id: None
         }
