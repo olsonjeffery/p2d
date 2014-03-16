@@ -49,7 +49,6 @@ impl FovType {
 pub struct Tile<TPayload> {
     passable: bool,
     fov: FovType,
-    sprites: ~[SpriteTile],
     payload: TPayload,
     portal_id: Option<uint>
 }
@@ -59,7 +58,6 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
         Tile {
             passable: false,
             fov: Void,
-            sprites: ~[],
             payload: Tile::stub_payload(),
             portal_id: None
         }

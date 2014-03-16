@@ -8,7 +8,7 @@
 use std::path::Path;
 use serialize::{Decodable, Encodable};
 
-#[deriving(Encodable, Decodable)]
+#[deriving(Clone, Encodable, Decodable)]
 pub struct SpriteSheet {
     path: ~str,
     name: ~str
