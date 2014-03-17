@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::hashmap::{HashMap, HashSet};
+use collections::hashmap::{HashMap, HashSet};
 use serialize::{Decoder, Encoder, Decodable, Encodable};
 use world::{Payloadable, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
 use zone::{Zone, Tile};

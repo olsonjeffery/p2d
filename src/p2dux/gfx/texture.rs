@@ -7,7 +7,7 @@
 
 use std::result::{Ok, Err};
 use std::option::{Some};
-use std::hashmap::HashMap;
+use collections::hashmap::HashMap;
 
 use sdl2::surface::{Surface};
 use sdl2::render::{Renderer, Texture};

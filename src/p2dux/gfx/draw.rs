@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::hashmap::HashMap;
+use collections::hashmap::HashMap;
 use std::option::{Some, None};
 use uuid::Uuid;
 use serialize::{Encoder, Decoder, Encodable, Decodable};

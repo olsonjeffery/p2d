@@ -5,10 +5,11 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use sdl2;
+use collections::hashmap::HashMap;
+use sdl2::sdl;
 use sdl2::render::Renderer;
-use std::hashmap::HashMap;
 use p2d::sprite::SpriteSheet;
+use sdl2;
 
 pub mod draw;
 pub mod texture;
@@ -21,7 +22,7 @@ pub struct GameDisplay {
 impl GameDisplay {
     pub fn new(title: &str, screen_size: (int, int, bool), ss: ~[SpriteSheet]) -> GameDisplay {
         // first thing we do
-        sdl2::init([sdl2::InitVideo]);
+        sdl::init([sdl2::InitVideo]);
 
         let (width, height, fullscreen) = screen_size;
         let window = match sdl2::video::Window::new(title, sdl2::video::PosCentered, sdl2::video::PosCentered, width, height, [sdl2::video::OpenGL]) {
@@ -31,7 +32,7 @@ impl GameDisplay {
         if fullscreen {
             window.set_fullscreen(sdl2::video::FTTrue);
         }
-        let renderer = match sdl2::render::Renderer::from_window(window, sdl2::render::DriverAuto, [sdl2::render::Accelerated]) {
+        let renderer = match Renderer::from_window(window, sdl2::render::DriverAuto, [sdl2::render::Accelerated]) {
             Ok(renderer) => renderer,
             Err(err) => fail!(format!("failed to create renderer: {}", err))
         };
@@ -61,6 +62,6 @@ impl GameDisplay {
 impl Drop for GameDisplay {
     fn drop(&mut self) {
         // last thing we do
-        sdl2::quit();
+        sdl::quit();
     }
 }

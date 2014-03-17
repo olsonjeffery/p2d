@@ -10,11 +10,13 @@
 #[desc = "Backend/graphics-agnostic code for the p2d 2D graphics library"];
 #[license = "MIT"];
 
-#[feature(globs)];
+#[feature(phase, globs)];
 
-extern mod extra = "extra#0.10-pre";
-extern mod serialize = "serialize#0.10-pre";
-extern mod uuid = "uuid#0.10-pre";
+extern crate serialize = "serialize#0.10-pre";
+extern crate uuid = "uuid#0.10-pre";
+extern crate collections = "collections#0.10-pre";
+#[phase(syntax, link)]
+extern crate log = "log#0.10-pre";
 
 pub mod world;
 pub mod zone;

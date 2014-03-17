@@ -12,14 +12,14 @@
 
 #[feature(globs)];
 
-extern mod extra = "extra#0.10-pre";
-extern mod serialize = "serialize#0.10-pre";
-extern mod uuid = "uuid#0.10-pre";
-extern mod sdl2 = "sdl2";
-extern mod p2d = "p2d";
+extern crate time = "time#0.10-pre";
+extern crate serialize = "serialize#0.10-pre";
+extern crate uuid = "uuid#0.10-pre";
+extern crate collections = "collections#0.10-pre";
+extern crate sdl2 = "sdl2";
+extern crate p2d = "p2d";
 use std::option::{Option, Some, None};
 use std::io::timer;
-use extra::time;
 
 use sdl2::event::{QuitEvent, KeyDownEvent, NoEvent, poll_event};
 use sdl2::keycode::*;

@@ -12,7 +12,7 @@
 
 use std::option::{None, Some};
 use std::vec::with_capacity;
-use std::hashmap::HashMap;
+use collections::hashmap::HashMap;
 use uuid::Uuid;
 use serialize::{Decodable, Encodable};
 

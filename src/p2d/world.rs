@@ -8,8 +8,8 @@
 use std::libc::{c_int};
 use std::libc;
 use std::cmp::{Eq, TotalEq};
-use std::to_bytes::{Cb, IterBytes};
-use std::hashmap::{HashMap, HashSet};
+use std::hash::Hash;
+use collections::hashmap::{HashMap, HashSet};
 use uuid::Uuid;
 use serialize::{Decodable, Encodable};
 
@@ -17,7 +17,7 @@ use super::zone::{Zone, ZoneTraversalResult, Destination, DestinationOutsideBoun
 use super::portal::Portal;
 use super::fov;
 
-#[deriving(Decodable, Encodable, Eq,IterBytes)]
+#[deriving(Decodable, Encodable, Eq,Hash)]
 pub enum TraversalDirection {
     North,
     East,
@@ -49,7 +49,7 @@ pub struct World<TPayload> {
     latest_portal_id: uint,
 }
 
-#[deriving(Eq, TotalEq, IterBytes, Clone)]
+#[deriving(Eq, TotalEq, Hash, Clone, Encodable, Decodable)]
 pub struct GlobalCoord {
     zone_id: uint,
     coords: (uint, uint)
@@ -64,7 +64,7 @@ impl GlobalCoord {
     }
 }
 
-#[deriving(IterBytes)]
+#[deriving(Hash)]
 pub struct RelativeCoord {
     zone_id: uint,
     lx: uint,
@@ -185,7 +185,7 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
     }
 
     /// Try traversing from one `GlobalCoord` to another.
-    pub fn traverse(&self, src: GlobalCoord, dir: TraversalDirection) -> ZoneTraversalResult {
+    pub fn try_traversal(&self, src: GlobalCoord, dir: TraversalDirection) -> ZoneTraversalResult {
         let delta: (int, int) = match dir {
             North => (0, -1),
             West => (-1, 0),
@@ -232,13 +232,6 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
                 (curr_zone_id, dest_coords)
             }
         };
-        /*
-        if dest_zone_id != curr_zone_id {
-            let old_zone = self.get_zone_mut(&curr_zone_id);
-            old_zone.remove_agent(aid);
-        }
-        self.move_agent(aid, dest_zone_id, dest_coords)
-        */
         let dest_zone = self.get_zone(&dest_zone_id);
         let (dx, dy) = dest_coords;
         println!("Dir {:?} Delta {:?} src: {:?} dest: {:?}",dir,delta,src.coords, dest_coords);
