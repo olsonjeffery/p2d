@@ -95,6 +95,5 @@ i686-pc-mingw32/
 /lib
 /build
 /bin
-/src/sdl2
-/src/rust-sdl2
 rustpkg_db.json
+/src/rust-sdl2/rust-sdl2
