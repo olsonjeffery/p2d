@@ -11,13 +11,11 @@
 // conditions..
 
 use std::option::{None, Some};
-use std::vec::with_capacity;
+use std::vec_ng::Vec;
 use collections::hashmap::HashMap;
 use uuid::Uuid;
-use serialize::{Decodable, Encodable};
 
-use super::sprite::SpriteTile;
-use super::world::{TraversalDirection, GlobalCoord, Payloadable};
+use super::world::{GlobalCoord, Payloadable};
 
 pub fn coords_to_idx(coords: (uint, uint), size: uint) -> uint {
     let (x, y) = coords;
@@ -46,7 +44,7 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
             portal_id: None
         }
     }
-    
+
     pub fn stub_payload() -> TPayload {
         Payloadable::stub()
     }
@@ -60,7 +58,7 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
 pub struct Zone<TPayload> {
     id: uint,
     size: uint,
-    all_tiles: ~[Tile<TPayload>],
+    all_tiles: Vec<Tile<TPayload>>,
     priv payload_coords: HashMap<Uuid, (uint, uint)>,
     priv portal_coords: HashMap<uint, (uint, uint)>
 }
@@ -71,7 +69,7 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
         let mut z = Zone {
             id: id,
             size: size,
-            all_tiles: with_capacity(size*size),
+            all_tiles: Vec::with_capacity(size*size),
             payload_coords: HashMap::new(),
             portal_coords: HashMap::new()
         };
@@ -88,24 +86,24 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
     // coordinate information for things within the Zone
     ///////////////////////
     pub fn get_payload_coords<'a>(&'a self, plid: &Uuid) -> &'a (uint, uint) {
-        self.payload_coords.find(plid).expect(format!("Unable to find coords for payload {:?}", plid))
+        self.payload_coords.find(plid).expect(
+            format!("Unable to find coords for payload {:?}", plid))
     }
     pub fn get_portal_coords<'a>(&'a self, pid: &uint) -> &'a (uint, uint) {
         self.portal_coords.find(pid).expect(format!("Unable to find coords for portal {:?}", pid))
     }
     pub fn coords_in_bounds(&self, coords: (uint, uint)) -> bool {
         let (x, y) = coords;
-        return x >= 0 && x < self.size
-            && y >= 0 && y < self.size
+        return x < self.size && y < self.size
     }
     ///////////////////////
     // Tile related
     ///////////////////////
     pub fn tile_at_idx<'a>(&'a self, idx: uint) -> &'a Tile<TPayload> {
-        &self.all_tiles[idx]
+        self.all_tiles.get(idx)
     }
     pub fn tile_at_idx_mut<'a>(&'a mut self, idx: uint) -> &'a mut Tile<TPayload> {
-        &mut self.all_tiles[idx]
+        self.all_tiles.get_mut(idx)
     }
     pub fn get_tile<'a>(&'a self, coords: (uint, uint)) -> &'a Tile<TPayload> {
         let idx = coords_to_idx(coords, self.size);
@@ -133,42 +131,4 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
         }
         self.portal_coords.insert(pid, coords);
     }
-    /*
-    pub fn gone_move_payload(&mut self, coords: (uint, uint), plid: Uuid) -> ZoneTraversalResult {
-        let in_bounds = self.coords_in_bounds(coords);
-        if !in_bounds {
-            DestinationOutsideBounds
-        } else {
-            // this will all move into some kind "traversal predicate" fn
-            // that would be passed to this fn when passable, etc moved into
-            // the payload.
-            {
-                let (is_occupied, is_passable) = {
-                    let target_tile = self.get_tile(coords);
-                    (target_tile.payload_id, target_tile.passable)
-                };
-                if is_occupied.is_some() {
-                    return DestinationOccupied(is_occupied.unwrap());
-                }
-                if !is_passable {
-                    return DestinationBlocked
-                }
-            }
-            // clear their previous position..
-            let agent_in_this_zone = self.payload_coords.contains_key(&plid);
-            if agent_in_this_zone {
-                self.remove_payload(&plid)
-            }
-            self.payload_coords.insert(plid, coords);
-            let target_tile = self.get_tile_mut(coords);
-            target_tile.payload_id = Some(plid);
-            Destination(GlobalCoord::new(self.id, coords))
-        }
-    }
-    pub fn remove_payload(&mut self, plid: &Uuid) {
-        let coords = self.payload_coords.pop(plid).expect("Tried to remove payload from zone, wasn't there!");
-        let t = self.get_tile_mut(coords);
-        t.payload_id = None;
-    }
-    */
 }

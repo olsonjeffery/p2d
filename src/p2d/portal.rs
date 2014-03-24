@@ -5,8 +5,6 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use serialize::{Decodable, Encodable};
-
 use super::world::{TraversalDirection, North, East, South, West};
 
 #[deriving(Encodable, Decodable)]
@@ -19,7 +17,8 @@ pub struct Portal {
 }
 
 impl Portal {
-    pub fn new(id: uint, a_zid: uint, ae: TraversalDirection, b_zid: uint, bx: TraversalDirection) -> Portal {
+    pub fn new(id: uint, a_zid: uint, ae: TraversalDirection,
+               b_zid: uint, bx: TraversalDirection) -> Portal {
         if ae == North && bx != South { fail!("bad portal dirs a:{:?} b:{:?}", ae, bx); }
         if ae == South && bx != North { fail!("bad portal dirs a:{:?} b:{:?}", ae, bx); }
         if ae == West && bx != East { fail!("bad portal dirs a:{:?} b:{:?}", ae, bx); }

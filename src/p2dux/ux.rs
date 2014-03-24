@@ -5,9 +5,11 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::vec_ng::Vec;
+
 use sdl2::{rect, pixels};
 
-use p2d::sprite::{SpriteSheet, SpriteTile};
+use p2d::sprite::SpriteTile;
 use gfx::GameDisplay;
 
 pub trait SpriteFontSheet {
@@ -19,8 +21,9 @@ pub trait SpriteFontSheet {
         let sheet = display.sheets.get(&self.get_sheet());
         let text_slice = text.slice_from(0);
         for c in text_slice.chars() {
-            let font_sprite = self.sprite_for(&c).expect(format!("Sprite not found for {:?}! Shouldn't happen...", c));
-            let (fsx, fsy) = font_sprite.size;
+            let font_sprite = self.sprite_for(&c).expect(
+                format!("Sprite not found for {:?}! Shouldn't happen...", c));
+            let (fsx, _) = font_sprite.size;
             sheet.draw_tile(display.renderer, font_sprite, (cx, cy), font_sprite.size);
             cx += (fsx+2) as int;
         }
@@ -94,5 +97,35 @@ pub trait SpriteUxBox {
                             right_coords, tile_size);
             left_right_y += unit_size;
         }
+    }
+}
+
+pub trait SpriteUxTextBox: SpriteFontSheet + SpriteUxBox {
+    /*
+    fn draw_dialog_box<TFont: SpriteFontSheet, TBox: SpriteUxBox>(&self,
+            display: &GameDisplay, coords: (int, int), lines: &[~str],
+            bg_color: (u8, u8, u8)) {
+        self.draw_line(display, coords, ~"sdfsdfsdfsdf");
+    }
+    */
+}
+
+pub struct SpriteUxDialog {
+    title: ~str,
+    lines: Vec<~str>,
+    selected_idx: uint,
+    box_size: (uint, uint)
+}
+
+impl SpriteUxDialog {
+    pub fn new(title: ~str) -> SpriteUxDialog {
+        SpriteUxDialog {
+            title: title,
+            lines: Vec::new(),
+            selected_idx: 0,
+            box_size: (0, 0)
+        }
+    }
+    pub fn recompute(&mut self) {
     }
 }

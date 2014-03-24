@@ -5,17 +5,10 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use collections::hashmap::HashMap;
 use std::option::{Some, None};
-use uuid::Uuid;
-use serialize::{Encoder, Decoder, Encodable, Decodable};
 
 use super::GameDisplay;
-use super::texture::TextureSheets;
-use p2d::world::{GlobalCoord, Payloadable, World, RelativeCoord};
-use p2d::sprite::{SpriteTile, SpriteSheet};
-use p2d::zone::{Zone, Tile};
-use ux::SpriteFontSheet;
+use p2d::sprite::SpriteTile;
 
 pub trait DrawableItem {
     fn get_sprites<'a>(&'a self) -> &'a [SpriteTile];

@@ -5,17 +5,13 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::libc::{c_int};
-use std::libc;
 use std::cmp::{Eq, TotalEq};
 use std::hash::Hash;
-use collections::hashmap::{HashMap, HashSet};
-use uuid::Uuid;
-use serialize::{Decodable, Encodable};
+use collections::hashmap::HashMap;
 
-use super::zone::{Zone, ZoneTraversalResult, Destination, DestinationOutsideBounds, DestinationBlocked};
+use super::zone::{Zone, ZoneTraversalResult, Destination,
+                  DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
-use super::fov;
 
 #[deriving(Decodable, Encodable, Eq,Hash)]
 pub enum TraversalDirection {
@@ -107,37 +103,17 @@ impl TotalEq for RelativeCoord {
 
 impl<TPayload: Send + Payloadable> World<TPayload> {
     pub fn new() -> World<TPayload> {
-        let mut w = World {
+        World {
             zones: HashMap::new(),
             portals: HashMap::new(),
             latest_zone_id: 0,
             latest_portal_id: 0,
-        };
-        w
-    }
-
-    // Entity creation
-    /*
-    pub fn new_payload(&mut self, zone_id: uint, coords: (uint, uint), payload: TPayload) {
-        let next_id = payload.get_id();
-        if self.payloads.contains_key(&next_id) {
-            fail!("A payload with the id:{:?} is already placed within the World!", next_id);
         }
-        {
-            let mut zone = self.get_zone_mut(&zone_id);
-            zone.move_payload(coords, next_id);
-        }
-        let ed = EntityData {
-            payload: payload,
-            zone_id: zone_id
-        };
-        self.payloads.insert(next_id, ed);
     }
-    */
 
     pub fn new_zone(&mut self, size: uint, cb: |&mut Zone<TPayload>|) -> uint {
         let next_id = self.latest_zone_id + 1;
-        let mut z = Zone::<TPayload>::new(size, next_id);
+        let z = Zone::<TPayload>::new(size, next_id);
         self.zones.insert(next_id, z);
         self.latest_zone_id = next_id;
         cb(self.zones.get_mut(&next_id));
@@ -247,24 +223,5 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
                 Destination(GlobalCoord::new(dest_zone_id, clean_dc))
             }
         }
-            
     }
-/*
-    pub fn move_agent(&mut self, aid: uint, zid: uint, dst: (uint, uint)) -> ZoneTraversalResult {
-        let mut curr_zone_id = {
-            let agent = self.get_agent(&aid);
-            agent.zone_id
-        };
-        if zid != curr_zone_id {
-            let old_zone = self.get_zone_mut(&curr_zone_id);
-            old_zone.remove_agent(aid);
-        }
-        {
-            let agent = self.get_agent_mut(&aid);
-            agent.zone_id = zid;
-        }
-        let mut zone = self.get_zone_mut(&zid);
-        zone.move_agent(aid, dst)
-    }
-*/
 }

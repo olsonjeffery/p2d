@@ -5,9 +5,6 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::path::Path;
-use serialize::{Decodable, Encodable};
-
 #[deriving(Clone, Encodable, Decodable)]
 pub struct SpriteSheet {
     path: ~str,

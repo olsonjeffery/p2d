@@ -5,9 +5,10 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use collections::hashmap::{HashMap, HashSet};
-use serialize::{Decoder, Encoder, Decodable, Encodable};
-use world::{Payloadable, World, RelativeCoord, TraversalDirection, North, South, East, West, NoDirection};
+use std::vec_ng::Vec;
+use collections::hashmap::{HashSet};
+use world::{Payloadable, World, RelativeCoord, TraversalDirection,
+            North, South, East, West, NoDirection};
 use zone::{Zone, Tile};
 
 #[deriving(Clone, Encodable, Decodable)]
@@ -29,12 +30,13 @@ pub trait FovItem {
     fn get_fov(&self) -> FovType;
 }
 
-pub fn compute<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, focus: RelativeCoord, radius: uint,
+pub fn compute<TPayload: Send + Payloadable + FovItem>(
+    world: &World<TPayload>, focus: RelativeCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
-                -> ~[RelativeCoord] {
+                -> Vec<RelativeCoord> {
     let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
-    let mut pending_zones = ~[(focus.zone_id, (focus.lx, focus.ly),
-                              (focus.gx, focus.gy), radius, 0, NoDirection)];
+    let mut pending_zones = vec!((focus.zone_id, (focus.lx, focus.ly),
+                              (focus.gx, focus.gy), radius, 0, NoDirection));
     let octants = [
         ((1, 1), true),   // 0 - SE-vert
         ((1, 1), false),  // 1 - SE-horiz
@@ -47,12 +49,14 @@ pub fn compute<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, 
     ];
     while pending_zones.len() > 0 {
         let before_len = visible_tiles.len();
-        let (curr_zid, curr_focus, curr_offset, max_radius, from_pid, from_dir) = pending_zones.pop().expect("fov::compute .. popping zone, shouldn't happen");
+        let (curr_zid, curr_focus, curr_offset, max_radius,
+             from_pid, from_dir) =
+            pending_zones.pop().expect("fov::compute .. popping zone, shouldn't happen");
         // When processing a connected zone, we only do the half of the screen
         // that we'll see based on the direction into which we arrived at the portal
         let mut octants_slice = match from_dir {
             // originating zone.. process all quads
-            NoDirection => octants.iter().filter(|o| { true }),
+            NoDirection => octants.iter().filter(|_| { true }),
             // North - NW and NE quads
             North => octants.iter().filter(|o| {
                 let &((_,y),_) = *o;
@@ -74,7 +78,8 @@ pub fn compute<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, 
                     x == 1
             }),
         };
-        println!("mrpas in zid:{:?} from_dir:{:?} at fc:{:?} gx:{:?}", curr_zid, from_dir, curr_focus,curr_offset);
+        println!("mrpas in zid:{:?} from_dir:{:?} at fc:{:?} gx:{:?}",
+                 curr_zid, from_dir, curr_focus,curr_offset);
         let zone = world.get_zone(&curr_zid);
         // always insert focus pos, then check for portal at starting pos
         if from_pid == 0 {
@@ -102,7 +107,7 @@ pub fn compute<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, 
     }
 
     debug!("num of visible_tiles: {:?}", visible_tiles.len());
-    visible_tiles.move_iter().to_owned_vec()
+    visible_tiles.move_iter().collect()
 }
 
 fn min(a: int, b: int) -> int {
@@ -111,23 +116,17 @@ fn min(a: int, b: int) -> int {
 fn max(a: int, b: int) -> int {
     if a > b { a } else { b }
 }
-fn fmin(a: f64, b: f64) -> f64 {
-    if a < b { a } else { b }
-}
-fn fmax(a: f64, b: f64) -> f64 {
-    if a > b { a } else { b }
-}
-fn abs(a: int) -> uint {
-    if a < 0 { (a * -1) as uint } else { a as uint }
-}
 
-fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
+type ComputeOctantPendingZones = (uint, (uint, uint), (int, int), uint, uint, TraversalDirection);
+
+fn compute_octant<TPayload: Send + Payloadable + FovItem>(
+    world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
                 offset: (int, int), max_radius: uint, from_pid: uint,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
                 dn: (int, int), is_vert: bool, from_dir: TraversalDirection)
-        -> (~[RelativeCoord],
-            ~[(uint, (uint, uint), (int, int), uint, uint, TraversalDirection)]) {
+        -> (Vec<RelativeCoord>,
+            Vec<ComputeOctantPendingZones>) {
     let mut visible_tiles = HashSet::new();
     let mut pending_zones = HashSet::new();
     let stub_tile = Tile::stub();
@@ -153,11 +152,6 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
         let mut total_obstacles = 0;
         let mut obstacles_in_last_line = 0;
         let mut min_angle = 0.0;
-        let mut c = 0;
-        let mut slopes_per_cell = 0.0;
-        let mut half_slopes = 0.0;
-        let mut processed_cell = 0;
-        let mut c = 0;
         // do while there are unblocked slopes left and the algo is within
         // the map's boundaries
         // scan progressive lines/columns from the focal-point outwards
@@ -174,7 +168,7 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
         } else {
             0 as int
         };
-        // branch:0 
+        // branch:0
         if is_vert {
             if y < -padding || y >= (wsize as int)+padding {
                     debug!("vdt: starting y:{:?} < 0 || y >= wisze", y);
@@ -186,9 +180,9 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
         }
         while !done {
             // process cells in the line
-            slopes_per_cell = 1.0 / (iteration as f64 + 1.0);
-            half_slopes = slopes_per_cell * 0.5;
-            processed_cell = (min_angle / slopes_per_cell) as int;
+            let slopes_per_cell = 1.0 / (iteration as f64 + 1.0);
+            let half_slopes = slopes_per_cell * 0.5;
+            let mut processed_cell = (min_angle / slopes_per_cell) as int;
             done = true;
             // branch:1 calculate min/max inner bounds + set inner
             let (mini, maxi) = if is_vert {
@@ -209,7 +203,7 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
                 y
             };
             while inner >= mini && inner <= maxi {
-                c = x + (y * wsize as int);
+                let c = x + (y * wsize as int);
                 let in_bounds = x >= 0 && y >= 0 && zone.coords_in_bounds((x as uint, y as uint));
                 let c_tile = if in_bounds {
                     //println!("c_tile fetch tile_at_idx:{:?}", (x,y));
@@ -222,10 +216,9 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
                     _ => false };
                 let mut allow_los = c_tile.payload.get_fov().allow_los();
                 let mut visible = true;
-                let mut extended = false;
-                let mut start_slope = processed_cell as f64 * slopes_per_cell;
-                let mut center_slope = start_slope + half_slopes;
-                let mut end_slope = start_slope + slopes_per_cell;
+                let start_slope = processed_cell as f64 * slopes_per_cell;
+                let center_slope = start_slope + half_slopes;
+                let end_slope = start_slope + slopes_per_cell;
                 if obstacles_in_last_line > 0 && !in_fov.contains(&c) {
                     let mut idx = 0;
                     while in_bounds && visible && idx < obstacles_in_last_line {
@@ -261,10 +254,10 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
                             let t = zone.tile_at_idx(zyx as uint);
                             t.payload.get_fov().allow_los()
                         } else { true };
-                        if (visible &&
+                        if visible &&
                             (!in_fov.contains(&zy) || !zy_tile_trans) &&
                             (n_minus_dn_bounds_check && ((!in_fov.contains(&zyx)) ||
-                                (!zyx_tile_trans)))) {
+                                (!zyx_tile_trans))) {
                             visible = false;
                         }
                         idx += 1;
@@ -403,11 +396,14 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload
         }
         debug!("vert done");
     }
-    (visible_tiles.move_iter().to_owned_vec(),
-     pending_zones.move_iter().to_owned_vec())
+    (visible_tiles.move_iter().collect(),
+     pending_zones.move_iter().collect())
 }
 
-fn build_pending_zone_entry<TPayload: Send + Payloadable + FovItem>(world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int), remaining_radius: uint) -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
+fn build_pending_zone_entry<TPayload: Send + Payloadable + FovItem>(
+    world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int),
+    remaining_radius: uint)
+        -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
     let portal = world.get_portal(pid);
     let (ozid, from_dir) = portal.info_from(zid);
     let other_zone = world.get_zone(&ozid);

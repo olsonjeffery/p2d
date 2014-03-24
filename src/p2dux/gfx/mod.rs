@@ -5,6 +5,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::vec_ng::Vec;
 use collections::hashmap::HashMap;
 use sdl2::sdl;
 use sdl2::render::Renderer;
@@ -20,19 +21,24 @@ pub struct GameDisplay {
 }
 
 impl GameDisplay {
-    pub fn new(title: &str, screen_size: (int, int, bool), ss: ~[SpriteSheet]) -> GameDisplay {
+    pub fn new(title: &str, screen_size: (int, int, bool), ss: Vec<SpriteSheet>) -> GameDisplay {
         // first thing we do
         sdl::init([sdl2::InitVideo]);
 
         let (width, height, fullscreen) = screen_size;
-        let window = match sdl2::video::Window::new(title, sdl2::video::PosCentered, sdl2::video::PosCentered, width, height, [sdl2::video::OpenGL]) {
+        let window = sdl2::video::Window::new(
+            title, sdl2::video::PosCentered, sdl2::video::PosCentered,
+            width, height, [sdl2::video::OpenGL]);
+        let window = match window {
             Ok(window) => window,
             Err(err) => fail!(format!("failed to create window: {}", err))
         };
         if fullscreen {
             window.set_fullscreen(sdl2::video::FTTrue);
         }
-        let renderer = match Renderer::from_window(window, sdl2::render::DriverAuto, [sdl2::render::Accelerated]) {
+        let renderer = Renderer::from_window(
+            window, sdl2::render::DriverAuto, [sdl2::render::Accelerated]);
+        let renderer = match renderer {
             Ok(renderer) => renderer,
             Err(err) => fail!(format!("failed to create renderer: {}", err))
         };
