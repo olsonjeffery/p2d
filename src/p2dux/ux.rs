@@ -12,11 +12,11 @@ use sdl2::{rect, pixels};
 use p2d::sprite::SpriteTile;
 use gfx::GameDisplay;
 
-pub trait SpriteFontSheet {
+pub trait SpriteUxFont {
     fn get_sheet(&self) -> ~str;
     fn sprite_for<'a>(&'a self, c: &char) -> Option<&'a SpriteTile>;
 
-    fn draw_line(&self, display: &GameDisplay, coords: (int, int), text: ~str) {
+    fn draw_line(&self, display: &GameDisplay, coords: (int, int), text: &str, gap: uint) {
         let (mut cx, cy) = coords;
         let sheet = display.sheets.get(&self.get_sheet());
         let text_slice = text.slice_from(0);
@@ -25,7 +25,7 @@ pub trait SpriteFontSheet {
                 format!("Sprite not found for {:?}! Shouldn't happen...", c));
             let (fsx, _) = font_sprite.size;
             sheet.draw_tile(display.renderer, font_sprite, (cx, cy), font_sprite.size);
-            cx += (fsx+2) as int;
+            cx += (fsx+gap) as int;
         }
     }
 }
@@ -100,32 +100,45 @@ pub trait SpriteUxBox {
     }
 }
 
-pub trait SpriteUxTextBox: SpriteFontSheet + SpriteUxBox {
-    /*
-    fn draw_dialog_box<TFont: SpriteFontSheet, TBox: SpriteUxBox>(&self,
-            display: &GameDisplay, coords: (int, int), lines: &[~str],
-            bg_color: (u8, u8, u8)) {
-        self.draw_line(display, coords, ~"sdfsdfsdfsdf");
-    }
-    */
+pub struct SpriteUxTextBox<'a, TFont, TBox> {
+    ux_font: &'a TFont,
+    ux_box: &'a TBox
 }
 
-pub struct SpriteUxDialog {
-    title: ~str,
+pub fn draw_text_box<TFont: SpriteUxFont, TBox: SpriteUxBox>(
+        display: &GameDisplay, coords: (int, int), size_in_units: (uint, uint),
+        bg_color: (u8, u8, u8), lines: &[~str], ux_font: &TFont, ux_box: &TBox,
+        gap: uint) {
+    // draw backing box
+    ux_box.draw_box(display, coords, size_in_units, bg_color);
+    // info to draw boxed text (note we aren't doing any bounds checking..)
+    let box_unit_size = ux_box.unit_size();
+    let (start_x, start_y) = coords;
+    let start_x = start_x + box_unit_size as int;
+    let mut curr_y = start_y + box_unit_size as int;
+    for curr_line in lines.iter() {
+        let l_coords = (start_x as int, curr_y as int);
+        ux_font.draw_line(display, l_coords, *curr_line, gap);
+        curr_y += box_unit_size as int + (box_unit_size >> 2) as int;
+    }
+}
+
+pub struct SpriteUxMenuBox<'a, TFont, TBox> {
+    ux_tb: &'a SpriteUxTextBox<'a, TFont, TBox>,
+    title: Option<~str>,
     lines: Vec<~str>,
-    selected_idx: uint,
-    box_size: (uint, uint)
+    bounds: (int, int, uint, uint),
+    bg_color: (u8, u8, u8)
 }
 
-impl SpriteUxDialog {
-    pub fn new(title: ~str) -> SpriteUxDialog {
-        SpriteUxDialog {
-            title: title,
+impl<'a, TFont: SpriteUxFont, TBox: SpriteUxBox> SpriteUxMenuBox<'a, TFont, TBox> {
+    pub fn new(tb: &'a SpriteUxTextBox<'a, TFont, TBox>) -> SpriteUxMenuBox<'a, TFont, TBox> {
+        SpriteUxMenuBox {
+            ux_tb: tb,
+            title: None,
             lines: Vec::new(),
-            selected_idx: 0,
-            box_size: (0, 0)
+            bounds: (0,0,0,0),
+            bg_color: (0,0,0)
         }
-    }
-    pub fn recompute(&mut self) {
     }
 }
