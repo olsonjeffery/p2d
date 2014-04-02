@@ -100,11 +100,6 @@ pub trait SpriteUxBox {
     }
 }
 
-pub struct SpriteUxTextBox<'a, TFont, TBox> {
-    ux_font: &'a TFont,
-    ux_box: &'a TBox
-}
-
 pub fn draw_text_box<TFont: SpriteUxFont, TBox: SpriteUxBox>(
         display: &GameDisplay, coords: (int, int), size_in_units: (uint, uint),
         bg_color: (u8, u8, u8), lines: &[~str], ux_font: &TFont, ux_box: &TBox,
@@ -123,22 +118,32 @@ pub fn draw_text_box<TFont: SpriteUxFont, TBox: SpriteUxBox>(
     }
 }
 
-pub struct SpriteUxMenuBox<'a, TFont, TBox> {
-    ux_tb: &'a SpriteUxTextBox<'a, TFont, TBox>,
-    title: Option<~str>,
-    lines: Vec<~str>,
-    bounds: (int, int, uint, uint),
-    bg_color: (u8, u8, u8)
+pub trait MenuEntry<TContext> {
+    fn get_name(&self) -> ~str;
+    fn on_selected<TFont: SpriteUxFont, TBox: SpriteUxBox>(
+        &self, menu: &mut SpriteUxMenuBox<TFont, TBox, TContext>,
+        ctx: &mut TContext);
 }
 
-impl<'a, TFont: SpriteUxFont, TBox: SpriteUxBox> SpriteUxMenuBox<'a, TFont, TBox> {
-    pub fn new(tb: &'a SpriteUxTextBox<'a, TFont, TBox>) -> SpriteUxMenuBox<'a, TFont, TBox> {
+pub struct SpriteUxMenuBox<TFont, TBox, TContext> {
+    entries: Vec<~MenuEntry<TContext>>,
+    bg_color: (u8, u8, u8),
+    selected_prefix: ~str,
+    unselected_prefix: ~str,
+    curr_selected: uint,
+    bounds: (int, int, uint, uint),
+}
+
+impl<TFont: SpriteUxFont, TBox: SpriteUxBox, TContext>
+        SpriteUxMenuBox<TFont, TBox, TContext>{
+    pub fn new() -> SpriteUxMenuBox<TFont, TBox, TContext> {
         SpriteUxMenuBox {
-            ux_tb: tb,
-            title: None,
-            lines: Vec::new(),
-            bounds: (0,0,0,0),
-            bg_color: (0,0,0)
+            entries: Vec::new(),
+            bg_color: (0,0,0),
+            selected_prefix: ~"",
+            unselected_prefix: ~"",
+            curr_selected: 0,
+            bounds: (0,0,0,0)
         }
     }
 }
