@@ -18,9 +18,8 @@ extern crate uuid = "uuid#0.10-pre";
 extern crate collections = "collections#0.10-pre";
 extern crate sdl2 = "sdl2";
 extern crate p2d = "p2d";
-use std::option::{Option, Some, None};
 use std::io::timer;
-use std::comm;
+use time::precise_time_ns;
 
 pub mod gfx;
 pub mod ux;
@@ -29,41 +28,58 @@ pub enum UxEvent {
     Continue,
     Quit
 }
-pub trait UxManager<TOut: Send> {
-    fn handle(&mut self, ms_since: u64, fps: uint) -> Option<TOut>;
-    fn throttle(&mut self, fps: uint) -> TOut {
-        let target_fps = (1000 / fps) as u64;
-
-        let mut last_time = time::precise_time_ns() / 1000000;
-        let mut fps_ctr = 0;
-        let mut next_fps = last_time + 1000;
-        let mut curr_fps = 0;
-        let (sender, receiver) = comm::channel();
-        loop {
-            let now_time = time::precise_time_ns() / 1000000;
-            let ms_since = now_time - last_time;
-            last_time = now_time;
-            // fps tracking
-            fps_ctr = fps_ctr + 1;
-            if now_time >= next_fps {
-                next_fps = now_time + 1000;
-                curr_fps = fps_ctr;
-                fps_ctr = 0;
-            }
-
-            match self.handle(ms_since, curr_fps) {
-                None => {
-                    // main loop throttle to provided fps
-                    let now_time = time::precise_time_ns() / 1000000;
-                    let next_frame = last_time + target_fps;
-                    if now_time < next_frame {
-                        let sleep_gap = next_frame - now_time;
-                        timer::sleep(sleep_gap);
-                    }
-                },
-                Some(s) => { sender.send(Some(s)); break }
-            }
+pub struct TimeTracker {
+    last_time: u64,
+    now_time: u64,
+    next_fps_time: u64,
+    fps_ctr: uint,
+    curr_fps: uint
+}
+impl TimeTracker {
+    pub fn new() -> TimeTracker {
+        let curr_time = precise_time_ns() / 1000000u64;
+        let mut tt = TimeTracker {
+            last_time: curr_time,
+            now_time: curr_time,
+            next_fps_time: curr_time + 1000u64,
+            fps_ctr: 0,
+            curr_fps: 0
+        };
+        tt.update();
+        tt
+    }
+    pub fn update(&mut self) {
+        self.last_time = self.now_time;
+        self.now_time = precise_time_ns() / 1000000u64;
+        if self.now_time >= self.next_fps_time {
+            self.curr_fps = self.fps_ctr;
+            self.fps_ctr = 0;
+            self.next_fps_time = self.now_time + 1000u64;
+        } else {
+            self.fps_ctr += 1;
         }
-        receiver.recv().expect("Exited handler loop with None value.. shouldn't happen")
+    }
+    pub fn get_curr_fps(&self) -> uint { self.curr_fps }
+    pub fn get_ms_since(&self) -> uint { (self.now_time - self.last_time) as uint }
+}
+
+pub trait UxManager<TOut: Send> {
+    fn draw(&self, display: &gfx::GameDisplay, parent_draw: |&gfx::GameDisplay|);
+    fn update(&mut self) -> Option<TOut>;
+}
+
+pub fn throttle(fps: uint, cb: || -> bool) {
+    let target_fps = (1000 / fps) as u64;
+    loop {
+        let next_frame = (precise_time_ns() / 1000000) + target_fps;
+        match cb() {
+            false => break,
+            _ => {}
+        }
+        let now_time = precise_time_ns() / 1000000;
+        if  now_time < next_frame {
+            let sleep_gap = next_frame - now_time;
+            timer::sleep(sleep_gap);
+        }
     }
 }
