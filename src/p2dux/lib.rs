@@ -18,16 +18,12 @@ extern crate uuid = "uuid#0.10-pre";
 extern crate collections = "collections#0.10-pre";
 extern crate sdl2 = "sdl2";
 extern crate p2d = "p2d";
-use std::io::timer;
 use time::precise_time_ns;
 
 pub mod gfx;
-pub mod ux;
+pub mod ui;
+pub mod view;
 
-pub enum UxEvent {
-    Continue,
-    Quit
-}
 pub struct TimeTracker {
     last_time: u64,
     now_time: u64,
@@ -61,25 +57,4 @@ impl TimeTracker {
     }
     pub fn get_curr_fps(&self) -> uint { self.curr_fps }
     pub fn get_ms_since(&self) -> uint { (self.now_time - self.last_time) as uint }
-}
-
-pub trait UxManager<TOut: Send> {
-    fn draw(&self, display: &gfx::GameDisplay, parent_draw: |&gfx::GameDisplay|);
-    fn update(&mut self) -> Option<TOut>;
-}
-
-pub fn throttle(fps: uint, cb: || -> bool) {
-    let target_fps = (1000 / fps) as u64;
-    loop {
-        let next_frame = (precise_time_ns() / 1000000) + target_fps;
-        match cb() {
-            false => break,
-            _ => {}
-        }
-        let now_time = precise_time_ns() / 1000000;
-        if  now_time < next_frame {
-            let sleep_gap = next_frame - now_time;
-            timer::sleep(sleep_gap);
-        }
-    }
 }
