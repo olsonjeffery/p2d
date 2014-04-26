@@ -33,7 +33,7 @@ pub enum ZoneTraversalResult {
 pub struct Tile<TPayload> {
     passable: bool,
     payload: TPayload,
-    portal_id: Option<uint>
+    portal_id: Option<Uuid>
 }
 
 impl<TPayload: Send + Payloadable> Tile<TPayload> {
@@ -56,18 +56,20 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
 
 #[deriving(Encodable, Decodable)]
 pub struct Zone<TPayload> {
-    id: uint,
+    id: Uuid,
+    name: ~str,
     size: uint,
     all_tiles: Vec<Tile<TPayload>>,
     priv payload_coords: HashMap<Uuid, (uint, uint)>,
-    priv portal_coords: HashMap<uint, (uint, uint)>
+    priv portal_coords: HashMap<Uuid, (uint, uint)>
 }
 
 impl<TPayload: Send + Payloadable> Zone<TPayload> {
-    pub fn new(size: uint, id: uint) -> Zone<TPayload> {
+    pub fn new(size: uint, id: Uuid, name: ~str) -> Zone<TPayload> {
         // size must be a power of 2
         let mut z = Zone {
             id: id,
+            name: name,
             size: size,
             all_tiles: Vec::with_capacity(size*size),
             payload_coords: HashMap::new(),
@@ -89,7 +91,7 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
         self.payload_coords.find(plid).expect(
             format!("Unable to find coords for payload {:?}", plid))
     }
-    pub fn get_portal_coords<'a>(&'a self, pid: &uint) -> &'a (uint, uint) {
+    pub fn get_portal_coords<'a>(&'a self, pid: &Uuid) -> &'a (uint, uint) {
         self.portal_coords.find(pid).expect(format!("Unable to find coords for portal {:?}", pid))
     }
     pub fn coords_in_bounds(&self, coords: (uint, uint)) -> bool {
@@ -116,7 +118,7 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
     ///////////////////////
     // adding/moving entities
     ///////////////////////
-    pub fn add_portal(&mut self, pid: uint, coords: (uint, uint)) {
+    pub fn add_portal(&mut self, pid: Uuid, coords: (uint, uint)) {
         if !self.coords_in_bounds(coords) {
             let (x, y) = coords;
             fail!("add_portal: coords {:?},{:?} aren't in bounds!", x, y);

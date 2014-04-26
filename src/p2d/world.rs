@@ -8,6 +8,7 @@
 use std::cmp::{Eq, TotalEq};
 use std::hash::Hash;
 use collections::hashmap::HashMap;
+use uuid::Uuid;
 
 use super::zone::{Zone, ZoneTraversalResult, Destination,
                   DestinationOutsideBounds, DestinationBlocked};
@@ -39,20 +40,18 @@ pub trait Payloadable {
 
 #[deriving(Decodable, Encodable)]
 pub struct World<TPayload> {
-    zones: HashMap<uint, Zone<TPayload>>,
-    portals: HashMap<uint, Portal>,
-    latest_zone_id: uint,
-    latest_portal_id: uint,
+    zones: HashMap<Uuid, Zone<TPayload>>,
+    portals: HashMap<Uuid, Portal>,
 }
 
 #[deriving(Eq, TotalEq, Hash, Clone, Encodable, Decodable)]
 pub struct GlobalCoord {
-    zone_id: uint,
+    zone_id: Uuid,
     coords: (uint, uint)
 }
 
 impl GlobalCoord {
-    pub fn new(zone_id: uint, coords: (uint, uint)) -> GlobalCoord {
+    pub fn new(zone_id: Uuid, coords: (uint, uint)) -> GlobalCoord {
         GlobalCoord {
             zone_id: zone_id,
             coords: coords
@@ -62,7 +61,7 @@ impl GlobalCoord {
 
 #[deriving(Hash)]
 pub struct RelativeCoord {
-    zone_id: uint,
+    zone_id: Uuid,
     lx: uint,
     ly: uint,
     gx: int,
@@ -70,7 +69,7 @@ pub struct RelativeCoord {
 }
 
 impl RelativeCoord {
-    pub fn new(zone_id: uint, coords: (uint, uint), g_coords: (int, int)) -> RelativeCoord {
+    pub fn new(zone_id: Uuid, coords: (uint, uint), g_coords: (int, int)) -> RelativeCoord {
         let (x, y) = coords;
         let (gx, gy) = g_coords;
         RelativeCoord {
@@ -106,23 +105,20 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
         World {
             zones: HashMap::new(),
             portals: HashMap::new(),
-            latest_zone_id: 0,
-            latest_portal_id: 0,
         }
     }
 
-    pub fn new_zone(&mut self, size: uint, cb: |&mut Zone<TPayload>|) -> uint {
-        let next_id = self.latest_zone_id + 1;
-        let z = Zone::<TPayload>::new(size, next_id);
+    pub fn new_zone(&mut self, size: uint, name: ~str, cb: |&mut Zone<TPayload>|) -> Uuid {
+        let next_id = Uuid::new_v4();
+        let z = Zone::<TPayload>::new(size, next_id, name);
         self.zones.insert(next_id, z);
-        self.latest_zone_id = next_id;
         cb(self.zones.get_mut(&next_id));
         next_id
     }
 
-    pub fn new_portal(&mut self, a: (uint, (uint, uint), TraversalDirection),
-                      b: (uint, (uint, uint), TraversalDirection)) -> uint {
-        let next_id = self.latest_portal_id + 1;
+    pub fn new_portal(&mut self, a: (Uuid, (uint, uint), TraversalDirection),
+                      b: (Uuid, (uint, uint), TraversalDirection)) -> Uuid {
+        let next_id = Uuid::new_v4();
         let (az, ac, ax) = a;
         let (bz, bc, bx) = b;
         let portal = Portal::new(next_id, az, ax, bz, bx);
@@ -135,7 +131,6 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
             let zone_b = self.get_zone_mut(&bz);
             zone_b.add_portal(next_id, bc);
         }
-        self.latest_portal_id = next_id;
         next_id
     }
 
@@ -148,14 +143,14 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
         let zone = self.get_zone_mut(&gc.zone_id);
         &mut zone.get_tile_mut(gc.coords).payload
     }
-    pub fn get_zone<'a>(&'a self, id: &uint) -> &'a Zone<TPayload> {
+    pub fn get_zone<'a>(&'a self, id: &Uuid) -> &'a Zone<TPayload> {
         self.zones.find(id).expect(format!("Cannot find zone with id {:?}", id))
     }
-    pub fn get_zone_mut<'a>(&'a mut self, id: &uint) -> &'a mut Zone<TPayload> {
+    pub fn get_zone_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut Zone<TPayload> {
         self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id))
     }
 
-    pub fn get_portal<'a>(&'a self, id: uint) -> &'a Portal {
+    pub fn get_portal<'a>(&'a self, id: Uuid) -> &'a Portal {
         self.portals.find(&id).expect(format!("Cannot find portal with id {:?}", id))
 
     }

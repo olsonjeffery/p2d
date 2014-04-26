@@ -7,6 +7,8 @@
 
 use std::vec_ng::Vec;
 use collections::hashmap::{HashSet};
+use uuid::Uuid;
+
 use world::{Payloadable, World, RelativeCoord, TraversalDirection,
             North, South, East, West, NoDirection};
 use zone::{Zone, Tile};
@@ -36,7 +38,7 @@ pub fn compute<TPayload: Send + Payloadable + FovItem>(
                 -> Vec<RelativeCoord> {
     let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
     let mut pending_zones = vec!((focus.zone_id, (focus.lx, focus.ly),
-                              (focus.gx, focus.gy), radius, 0, NoDirection));
+                              (focus.gx, focus.gy), radius, Uuid::nil(), NoDirection));
     let octants = [
         ((1, 1), true),   // 0 - SE-vert
         ((1, 1), false),  // 1 - SE-horiz
@@ -82,7 +84,7 @@ pub fn compute<TPayload: Send + Payloadable + FovItem>(
                  curr_zid, from_dir, curr_focus,curr_offset);
         let zone = world.get_zone(&curr_zid);
         // always insert focus pos, then check for portal at starting pos
-        if from_pid == 0 {
+        if from_pid == Uuid::nil() {
             visible_tiles.insert(RelativeCoord::new(curr_zid, curr_focus, curr_offset));
             let curr_tile = zone.get_tile(curr_focus);
             match curr_tile.portal_id {
@@ -117,11 +119,11 @@ fn max(a: int, b: int) -> int {
     if a > b { a } else { b }
 }
 
-type ComputeOctantPendingZones = (uint, (uint, uint), (int, int), uint, uint, TraversalDirection);
+type ComputeOctantPendingZones = (Uuid, (uint, uint), (int, int), uint, Uuid, TraversalDirection);
 
 fn compute_octant<TPayload: Send + Payloadable + FovItem>(
     world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
-                offset: (int, int), max_radius: uint, from_pid: uint,
+                offset: (int, int), max_radius: uint, from_pid: Uuid,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
                 dn: (int, int), is_vert: bool, from_dir: TraversalDirection)
@@ -332,7 +334,7 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(
                                 let remaining_radius = if remaining_radius < 0 {
                                     0 as uint
                                 } else { remaining_radius as uint };
-                                let remaining_radius = if from_pid == 0 {
+                                let remaining_radius = if from_pid == Uuid::nil() {
                                     max_radius
                                 } else { remaining_radius };
                                 let pz = build_pending_zone_entry(
@@ -401,9 +403,9 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(
 }
 
 fn build_pending_zone_entry<TPayload: Send + Payloadable + FovItem>(
-    world: &World<TPayload>, zid: uint, pid: uint, this_gx: (int, int),
+    world: &World<TPayload>, zid: Uuid, pid: Uuid, this_gx: (int, int),
     remaining_radius: uint)
-        -> (uint, (uint, uint), (int, int), uint, uint, TraversalDirection) {
+        -> (Uuid, (uint, uint), (int, int), uint, Uuid, TraversalDirection) {
     let portal = world.get_portal(pid);
     let (ozid, from_dir) = portal.info_from(zid);
     let other_zone = world.get_zone(&ozid);
