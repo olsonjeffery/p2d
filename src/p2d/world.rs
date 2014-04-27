@@ -39,8 +39,9 @@ pub trait Payloadable {
 }
 
 #[deriving(Decodable, Encodable)]
-pub struct World<TPayload> {
-    zones: HashMap<Uuid, Zone<TPayload>>,
+pub struct World<TWorldPayload, TZonePayload, TTilePayload> {
+    data: TWorldPayload,
+    zones: HashMap<Uuid, Zone<TZonePayload, TTilePayload>>,
     portals: HashMap<Uuid, Portal>,
 }
 
@@ -100,20 +101,23 @@ impl TotalEq for RelativeCoord {
     }
 }
 
-impl<TPayload: Send + Payloadable> World<TPayload> {
-    pub fn new() -> World<TPayload> {
+impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
+        World<TWorldPayload, TZonePayload, TTilePayload> {
+    pub fn new(data: TWorldPayload) -> World<TWorldPayload, TZonePayload, TTilePayload> {
         World {
+            data: data,
             zones: HashMap::new(),
             portals: HashMap::new(),
         }
     }
 
-    pub fn new_zone(&mut self, size: uint, name: ~str, cb: |&mut Zone<TPayload>|) -> Uuid {
-        let next_id = Uuid::new_v4();
-        let z = Zone::<TPayload>::new(size, next_id, name);
-        self.zones.insert(next_id, z);
-        cb(self.zones.get_mut(&next_id));
-        next_id
+    pub fn new_zone(&mut self, size: uint, data: TZonePayload,
+                    cb: |&mut Zone<TZonePayload, TTilePayload>|) -> Uuid {
+        let zone_id = Uuid::new_v4();
+        let z = Zone::<TZonePayload, TTilePayload>::new(size, zone_id, data);
+        self.zones.insert(zone_id, z);
+        cb(self.zones.get_mut(&zone_id));
+        zone_id
     }
 
     pub fn new_portal(&mut self, a: (Uuid, (uint, uint), TraversalDirection),
@@ -135,18 +139,18 @@ impl<TPayload: Send + Payloadable> World<TPayload> {
     }
 
     // Entity lookup
-    pub fn get_payload<'a>(&'a self, gc: &GlobalCoord) -> &'a TPayload {
+    pub fn get_payload<'a>(&'a self, gc: &GlobalCoord) -> &'a TTilePayload {
         let zone = self.get_zone(&gc.zone_id);
         &zone.get_tile(gc.coords).payload
     }
-    pub fn get_payload_mut<'a>(&'a mut self, gc: &GlobalCoord) -> &'a mut TPayload {
+    pub fn get_payload_mut<'a>(&'a mut self, gc: &GlobalCoord) -> &'a mut TTilePayload {
         let zone = self.get_zone_mut(&gc.zone_id);
         &mut zone.get_tile_mut(gc.coords).payload
     }
-    pub fn get_zone<'a>(&'a self, id: &Uuid) -> &'a Zone<TPayload> {
+    pub fn get_zone<'a>(&'a self, id: &Uuid) -> &'a Zone<TZonePayload, TTilePayload> {
         self.zones.find(id).expect(format!("Cannot find zone with id {:?}", id))
     }
-    pub fn get_zone_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut Zone<TPayload> {
+    pub fn get_zone_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut Zone<TZonePayload, TTilePayload> {
         self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id))
     }
 

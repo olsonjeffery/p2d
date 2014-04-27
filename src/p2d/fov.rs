@@ -32,8 +32,8 @@ pub trait FovItem {
     fn get_fov(&self) -> FovType;
 }
 
-pub fn compute<TPayload: Send + Payloadable + FovItem>(
-    world: &World<TPayload>, focus: RelativeCoord, radius: uint,
+pub fn compute<TWorldPayload, TZonePayload, TPayload: Send + Payloadable + FovItem>(
+    world: &World<TWorldPayload, TZonePayload, TPayload>, focus: RelativeCoord, radius: uint,
             start_ang: &mut [f64], end_ang: &mut [f64])
                 -> Vec<RelativeCoord> {
     let mut visible_tiles: HashSet<RelativeCoord> = HashSet::new();
@@ -121,8 +121,10 @@ fn max(a: int, b: int) -> int {
 
 type ComputeOctantPendingZones = (Uuid, (uint, uint), (int, int), uint, Uuid, TraversalDirection);
 
-fn compute_octant<TPayload: Send + Payloadable + FovItem>(
-    world: &World<TPayload>, zone: &Zone<TPayload>, position: (uint, uint),
+fn compute_octant<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable + FovItem>(
+                world: &World<TWorldPayload, TZonePayload, TTilePayload>,
+                zone: &Zone<TZonePayload, TTilePayload>,
+                position: (uint, uint),
                 offset: (int, int), max_radius: uint, from_pid: Uuid,
                 in_fov: &mut HashSet<int>,
                 start_angle: &mut [f64], end_angle: &mut [f64],
@@ -402,8 +404,8 @@ fn compute_octant<TPayload: Send + Payloadable + FovItem>(
      pending_zones.move_iter().collect())
 }
 
-fn build_pending_zone_entry<TPayload: Send + Payloadable + FovItem>(
-    world: &World<TPayload>, zid: Uuid, pid: Uuid, this_gx: (int, int),
+fn build_pending_zone_entry<TWorldPayload, TZonePayload, TPayload: Send + Payloadable + FovItem>(
+    world: &World<TWorldPayload, TZonePayload, TPayload>, zid: Uuid, pid: Uuid, this_gx: (int, int),
     remaining_radius: uint)
         -> (Uuid, (uint, uint), (int, int), uint, Uuid, TraversalDirection) {
     let portal = world.get_portal(pid);

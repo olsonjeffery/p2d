@@ -30,14 +30,14 @@ pub enum ZoneTraversalResult {
 }
 
 #[deriving(Encodable, Decodable)]
-pub struct Tile<TPayload> {
+pub struct Tile<TTilePayload> {
     passable: bool,
-    payload: TPayload,
+    payload: TTilePayload,
     portal_id: Option<Uuid>
 }
 
-impl<TPayload: Send + Payloadable> Tile<TPayload> {
-    pub fn stub() -> Tile<TPayload> {
+impl<TTilePayload: Send + Payloadable> Tile<TTilePayload> {
+    pub fn stub() -> Tile<TTilePayload> {
         Tile {
             passable: false,
             payload: Tile::stub_payload(),
@@ -45,31 +45,31 @@ impl<TPayload: Send + Payloadable> Tile<TPayload> {
         }
     }
 
-    pub fn stub_payload() -> TPayload {
+    pub fn stub_payload() -> TTilePayload {
         Payloadable::stub()
     }
 
-    pub fn get_payload<'a>(&'a self) -> &'a TPayload {
+    pub fn get_payload<'a>(&'a self) -> &'a TTilePayload {
         &self.payload
     }
 }
 
 #[deriving(Encodable, Decodable)]
-pub struct Zone<TPayload> {
+pub struct Zone<TZonePayload, TTilePayload> {
     id: Uuid,
-    name: ~str,
+    data: TZonePayload,
     size: uint,
-    all_tiles: Vec<Tile<TPayload>>,
+    all_tiles: Vec<Tile<TTilePayload>>,
     priv payload_coords: HashMap<Uuid, (uint, uint)>,
     priv portal_coords: HashMap<Uuid, (uint, uint)>
 }
 
-impl<TPayload: Send + Payloadable> Zone<TPayload> {
-    pub fn new(size: uint, id: Uuid, name: ~str) -> Zone<TPayload> {
+impl<TZonePayload, TTilePayload: Send + Payloadable> Zone<TZonePayload, TTilePayload> {
+    pub fn new(size: uint, id: Uuid, data: TZonePayload) -> Zone<TZonePayload, TTilePayload> {
         // size must be a power of 2
         let mut z = Zone {
             id: id,
-            name: name,
+            data: data,
             size: size,
             all_tiles: Vec::with_capacity(size*size),
             payload_coords: HashMap::new(),
@@ -78,7 +78,7 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
         let limit = size*size;
         let mut ctr = 0;
         while ctr < limit {
-            let tile: Tile<TPayload> = Tile::<TPayload>::stub();
+            let tile: Tile<TTilePayload> = Tile::<TTilePayload>::stub();
             z.all_tiles.push(tile);
             ctr += 1;
         }
@@ -101,17 +101,17 @@ impl<TPayload: Send + Payloadable> Zone<TPayload> {
     ///////////////////////
     // Tile related
     ///////////////////////
-    pub fn tile_at_idx<'a>(&'a self, idx: uint) -> &'a Tile<TPayload> {
+    pub fn tile_at_idx<'a>(&'a self, idx: uint) -> &'a Tile<TTilePayload> {
         self.all_tiles.get(idx)
     }
-    pub fn tile_at_idx_mut<'a>(&'a mut self, idx: uint) -> &'a mut Tile<TPayload> {
+    pub fn tile_at_idx_mut<'a>(&'a mut self, idx: uint) -> &'a mut Tile<TTilePayload> {
         self.all_tiles.get_mut(idx)
     }
-    pub fn get_tile<'a>(&'a self, coords: (uint, uint)) -> &'a Tile<TPayload> {
+    pub fn get_tile<'a>(&'a self, coords: (uint, uint)) -> &'a Tile<TTilePayload> {
         let idx = coords_to_idx(coords, self.size);
         self.tile_at_idx(idx)
     }
-    pub fn get_tile_mut<'a>(&'a mut self, coords: (uint, uint)) -> &'a mut Tile<TPayload> {
+    pub fn get_tile_mut<'a>(&'a mut self, coords: (uint, uint)) -> &'a mut Tile<TTilePayload> {
         let idx = coords_to_idx(coords, self.size);
         self.tile_at_idx_mut(idx)
     }
