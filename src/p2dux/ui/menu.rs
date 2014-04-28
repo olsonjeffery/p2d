@@ -9,7 +9,7 @@ use std::vec_ng::Vec;
 
 use gfx::GameDisplay;
 
-use super::{UiBox, UiFont, draw_text_box};
+use super::{UiBox, UiFont, draw_text_box, compute_text_box_bounds};
 
 pub struct VertTextMenu<TFont, TBox> {
     entries: Vec<~str>,
@@ -72,30 +72,13 @@ impl<TFont: UiFont, TBox: UiBox>
     }
     pub fn update_bounds(&mut self, coords: (int, int), ui_font: &TFont, ui_box: &TBox) {
         // figure out width, in pixels, of the text (based on longest entry line)
-        let mut longest_len = 0;
         self.formatted_entries = Vec::new();
         for v in range(0, self.entries.len()) {
             let formatted = self.get_formatted(v);
-            let flen = ui_font.compute_len(formatted, self.text_gap);
             self.formatted_entries.push(formatted);
-            if flen > longest_len {
-                longest_len = flen;
-            }
         }
-        // figure out height, in pixels, of the text
-        let (_, fy) = ui_font.sprite_for(&' ')
-            .expect("update_bounds(): expected a spritetile..").size;
-        let font_height = (fy * self.entries.len()) +
-            ((fy >> 2) * (self.entries.len() - 1));
-        let box_unit_size = ui_box.unit_size();
-        // compute menu box size from width/height info
-        let font_h_units = font_height / box_unit_size;
-        let padding_h = 2 + if (font_height % box_unit_size) > 0 { 1 } else { 0 };
-        let box_h = font_h_units + padding_h;
-        let font_w_units = longest_len / box_unit_size;
-        let padding_w = 2 + if (longest_len % box_unit_size) > 0 { 1 } else { 0 };
-        let box_w = font_w_units + padding_w;
-        self.box_size = (box_w, box_h);
+        self.box_size = compute_text_box_bounds(
+            self.formatted_entries.as_slice(), ui_font, ui_box, self.text_gap);
         self.coords = coords;
     }
 

@@ -11,6 +11,7 @@ use p2d::sprite::SpriteTile;
 use gfx::GameDisplay;
 
 pub mod menu;
+pub mod input;
 
 pub trait UiFont {
     fn get_sheet(&self) -> ~str;
@@ -127,4 +128,31 @@ pub fn draw_text_box<TFont: UiFont, TBox: UiBox>(
         ux_font.draw_line(display, l_coords, *curr_line, gap);
         curr_y += box_unit_size as int + (box_unit_size >> 2) as int;
     }
+}
+
+pub fn compute_text_box_bounds<TFont: UiFont, TBox: UiBox>(
+        lines: &[~str], ui_font: &TFont, ui_box: &TBox,
+        text_gap: uint) -> (uint, uint) {
+    // figure out width, in pixels, of the text (based on longest entry line)
+    let mut longest_len = 0;
+    for line in lines.iter() {
+        let flen = ui_font.compute_len(*line, text_gap);
+        if flen > longest_len {
+            longest_len = flen;
+        }
+    }
+    // figure out height, in pixels, of the text
+    let (_, fy) = ui_font.sprite_for(&' ')
+        .expect("compute_text_box_bounds(): expected a spritetile..").size;
+    let font_height = (fy * lines.len()) +
+        ((fy >> 2) * (lines.len() - 1));
+    let box_unit_size = ui_box.unit_size();
+    // compute menu box size from width/height info
+    let font_h_units = font_height / box_unit_size;
+    let padding_h = 2 + if (font_height % box_unit_size) > 0 { 1 } else { 0 };
+    let box_h = font_h_units + padding_h;
+    let font_w_units = longest_len / box_unit_size;
+    let padding_w = 2 + if (longest_len % box_unit_size) > 0 { 1 } else { 0 };
+    let box_w = font_w_units + padding_w;
+    (box_w, box_h)
 }
