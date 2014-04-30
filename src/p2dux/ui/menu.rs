@@ -5,22 +5,22 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::vec_ng::Vec;
+use std::vec::Vec;
 
 use gfx::GameDisplay;
 
 use super::{UiBox, UiFont, draw_text_box, compute_text_box_bounds};
 
 pub struct VertTextMenu<TFont, TBox> {
-    entries: Vec<~str>,
-    formatted_entries: Vec<~str>,
-    bg_color: (u8, u8, u8),
-    selected_prefix: ~str,
-    unselected_prefix: ~str,
-    curr_selected: uint,
-    coords: (int, int),
-    box_size: (uint, uint),
-    text_gap: uint
+    pub entries: Vec<~str>,
+    pub formatted_entries: Vec<~str>,
+    pub bg_color: (u8, u8, u8),
+    pub selected_prefix: ~str,
+    pub unselected_prefix: ~str,
+    pub curr_selected: uint,
+    pub coords: (int, int),
+    pub box_size: (uint, uint),
+    pub text_gap: uint
 }
 
 impl<TFont: UiFont, TBox: UiBox>

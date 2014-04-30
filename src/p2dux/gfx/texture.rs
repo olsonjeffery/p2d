@@ -43,10 +43,11 @@ impl TextureSheet {
         //let (x, y) = dst;
         let (tile_x, tile_y) = st.coords;
         let (size_x, size_y) = st.size;
-        let src = Some(Rect(tile_x as i32, tile_y as i32, size_x as i32, size_y as i32));
+        let src = Some(Rect::new(tile_x as i32, tile_y as i32, size_x as i32, size_y as i32));
         let (dst_x, dst_y) = dst_coords;
         let (dst_size_x, dst_size_y) = dst_size;
-        let dst = Some(Rect(dst_x as i32, dst_y as i32, dst_size_x as i32, dst_size_y as i32));
-        renderer.copy(self.texture, src, dst)
+        let dst = Some(Rect::new(dst_x as i32, dst_y as i32, dst_size_x as i32, dst_size_y as i32));
+        // FIXME this is lame
+        renderer.copy(self.texture, src, dst).is_ok()
     }
 }

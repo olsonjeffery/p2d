@@ -5,7 +5,7 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::vec_ng::Vec;
+use std::vec::Vec;
 use collections::hashmap::HashMap;
 use sdl2::sdl;
 use sdl2::render::Renderer;
@@ -16,19 +16,19 @@ pub mod draw;
 pub mod texture;
 
 pub struct GameDisplay {
-    renderer: ~Renderer,
-    sheets: texture::TextureSheets
+    pub renderer: ~Renderer,
+    pub sheets: texture::TextureSheets
 }
 
 impl GameDisplay {
     pub fn new(title: &str, screen_size: (int, int, bool), ss: Vec<SpriteSheet>) -> GameDisplay {
         // first thing we do
-        sdl::init([sdl2::InitVideo]);
+        sdl::init(sdl2::InitVideo);
 
         let (width, height, fullscreen) = screen_size;
         let window = sdl2::video::Window::new(
             title, sdl2::video::PosCentered, sdl2::video::PosCentered,
-            width, height, [sdl2::video::OpenGL]);
+            width, height, sdl2::video::OpenGL);
         let window = match window {
             Ok(window) => window,
             Err(err) => fail!(format!("failed to create window: {}", err))
@@ -37,7 +37,7 @@ impl GameDisplay {
             window.set_fullscreen(sdl2::video::FTTrue);
         }
         let renderer = Renderer::from_window(
-            window, sdl2::render::DriverAuto, [sdl2::render::Accelerated]);
+            window, sdl2::render::DriverAuto, sdl2::render::Accelerated);
         let renderer = match renderer {
             Ok(renderer) => renderer,
             Err(err) => fail!(format!("failed to create renderer: {}", err))
@@ -58,10 +58,16 @@ impl GameDisplay {
 
     pub fn set_draw_color(&self, rgb: (u8, u8, u8)) {
         let (r, g, b) = rgb;
-        self.renderer.set_draw_color(sdl2::pixels::RGB(r, g, b));
+        match self.renderer.set_draw_color(sdl2::pixels::RGB(r, g, b)) {
+            Ok(()) => {},
+            Err(e) => fail!("set_draw_color(): failure: {}", e)
+        }
     }
     pub fn set_draw_sdl2_color(&self, rgb: sdl2::pixels::Color) {
-        self.renderer.set_draw_color(rgb);
+        match self.renderer.set_draw_color(rgb) {
+            Ok(()) => {},
+            Err(e) => fail!("set_draw_sdl2_color(): failure: {}", e)
+        }
     }
 }
 

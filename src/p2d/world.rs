@@ -14,7 +14,7 @@ use super::zone::{Zone, ZoneTraversalResult, Destination,
                   DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
 
-#[deriving(Decodable, Encodable, Eq,Hash)]
+#[deriving(Decodable, Encodable, Eq, Hash, TotalEq)]
 pub enum TraversalDirection {
     North,
     East,
@@ -40,15 +40,15 @@ pub trait Payloadable {
 
 #[deriving(Decodable, Encodable)]
 pub struct World<TWorldPayload, TZonePayload, TTilePayload> {
-    data: TWorldPayload,
-    zones: HashMap<Uuid, Zone<TZonePayload, TTilePayload>>,
-    portals: HashMap<Uuid, Portal>,
+    pub data: TWorldPayload,
+    pub zones: HashMap<Uuid, Zone<TZonePayload, TTilePayload>>,
+    pub portals: HashMap<Uuid, Portal>,
 }
 
 #[deriving(Eq, TotalEq, Hash, Clone, Encodable, Decodable)]
 pub struct GlobalCoord {
-    zone_id: Uuid,
-    coords: (uint, uint)
+    pub zone_id: Uuid,
+    pub coords: (uint, uint)
 }
 
 impl GlobalCoord {
@@ -60,13 +60,13 @@ impl GlobalCoord {
     }
 }
 
-#[deriving(Hash)]
+#[deriving(Hash, TotalEq)]
 pub struct RelativeCoord {
-    zone_id: Uuid,
-    lx: uint,
-    ly: uint,
-    gx: int,
-    gy: int
+    pub zone_id: Uuid,
+    pub lx: uint,
+    pub ly: uint,
+    pub gx: int,
+    pub gy: int
 }
 
 impl RelativeCoord {
@@ -84,15 +84,6 @@ impl RelativeCoord {
 }
 impl Eq for RelativeCoord {
     fn eq(&self, other: &RelativeCoord) -> bool {
-        return self.zone_id == other.zone_id
-            && self.gx == other.gx
-            && self.gy == other.gy
-            && self.lx == other.lx
-            && self.ly == other.ly
-    }
-}
-impl TotalEq for RelativeCoord {
-    fn equals(&self, other: &RelativeCoord) -> bool {
         return self.zone_id == other.zone_id
             && self.gx == other.gx
             && self.gy == other.gy

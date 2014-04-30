@@ -7,15 +7,15 @@
 
 #[deriving(Clone, Encodable, Decodable)]
 pub struct SpriteSheet {
-    path: ~str,
-    name: ~str
+    pub path: ~str,
+    pub name: ~str
 }
 
 #[deriving(Encodable, Decodable)]
 pub struct SpriteTile {
-    sheet: ~str,
-    coords: (uint, uint),
-    size: (uint, uint)
+    pub sheet: ~str,
+    pub coords: (uint, uint),
+    pub size: (uint, uint)
 }
 
 impl Clone for SpriteTile {

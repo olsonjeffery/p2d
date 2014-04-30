@@ -5,17 +5,16 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[crate_id="p2dux#0.1"];
-#[crate_type="rlib"];
-#[desc = "All UX/Frontend-specific code in the p2d 2D-graphics library"];
-#[license = "MIT"];
+#![crate_id="p2dux#0.1"]
+#![crate_type="rlib"]
+#![desc = "All UX/Frontend-specific code in the p2d 2D-graphics library"]
+#![license = "MIT"]
+#![feature(globs)]
 
-#[feature(globs)];
-
-extern crate time = "time#0.10-pre";
-extern crate serialize = "serialize#0.10-pre";
-extern crate uuid = "uuid#0.10-pre";
-extern crate collections = "collections#0.10-pre";
+extern crate time = "time";
+extern crate serialize = "serialize";
+extern crate uuid = "uuid";
+extern crate collections = "collections";
 extern crate sdl2 = "sdl2";
 extern crate p2d = "p2d";
 use time::precise_time_ns;

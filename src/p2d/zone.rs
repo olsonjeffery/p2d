@@ -11,7 +11,7 @@
 // conditions..
 
 use std::option::{None, Some};
-use std::vec_ng::Vec;
+use std::vec::Vec;
 use collections::hashmap::HashMap;
 use uuid::Uuid;
 
@@ -31,9 +31,9 @@ pub enum ZoneTraversalResult {
 
 #[deriving(Encodable, Decodable)]
 pub struct Tile<TTilePayload> {
-    passable: bool,
-    payload: TTilePayload,
-    portal_id: Option<Uuid>
+    pub passable: bool,
+    pub payload: TTilePayload,
+    pub portal_id: Option<Uuid>
 }
 
 impl<TTilePayload: Send + Payloadable> Tile<TTilePayload> {
@@ -56,12 +56,12 @@ impl<TTilePayload: Send + Payloadable> Tile<TTilePayload> {
 
 #[deriving(Encodable, Decodable)]
 pub struct Zone<TZonePayload, TTilePayload> {
-    id: Uuid,
-    data: TZonePayload,
-    size: uint,
-    all_tiles: Vec<Tile<TTilePayload>>,
-    priv payload_coords: HashMap<Uuid, (uint, uint)>,
-    priv portal_coords: HashMap<Uuid, (uint, uint)>
+    pub id: Uuid,
+    pub data: TZonePayload,
+    pub size: uint,
+    pub all_tiles: Vec<Tile<TTilePayload>>,
+    pub payload_coords: HashMap<Uuid, (uint, uint)>,
+    pub portal_coords: HashMap<Uuid, (uint, uint)>
 }
 
 impl<TZonePayload, TTilePayload: Send + Payloadable> Zone<TZonePayload, TTilePayload> {

@@ -5,18 +5,17 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[crate_id="p2d#0.1"];
-#[crate_type="rlib"];
-#[desc = "Backend/graphics-agnostic code for the p2d 2D graphics library"];
-#[license = "MIT"];
+#![crate_id="p2d#0.1"]
+#![crate_type="rlib"]
+#![desc = "Backend/graphics-agnostic code for the p2d 2D graphics library"]
+#![license = "MIT"]
+#![feature(phase, globs)]
 
-#[feature(phase, globs)];
-
-extern crate serialize = "serialize#0.10-pre";
-extern crate uuid = "uuid#0.10-pre";
-extern crate collections = "collections#0.10-pre";
+extern crate serialize = "serialize";
+extern crate uuid = "uuid";
+extern crate collections = "collections";
 #[phase(syntax, link)]
-extern crate log = "log#0.10-pre";
+extern crate log = "log";
 
 pub mod world;
 pub mod zone;

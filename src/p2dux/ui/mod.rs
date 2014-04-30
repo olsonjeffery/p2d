@@ -68,7 +68,10 @@ pub trait UiBox {
         let (rect_w, rect_h) = (w*unit_size, h*unit_size);
         let bg_rect = rect::Rect::new(
             start_x as i32, start_y as i32, rect_w as i32, rect_h as i32);
-        display.renderer.fill_rect(&bg_rect);
+        match display.renderer.fill_rect(&bg_rect) {
+            Ok(()) => {},
+            Err(e) => fail!("draw_box: failure in fill_rect(): {}", e)
+        }
         // draw corners
         let (ul_x, ul_y) = coords;
         sheet.draw_tile(display.renderer, self.get_ul_corner(),
