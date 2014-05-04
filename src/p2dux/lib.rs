@@ -24,11 +24,11 @@ pub mod ui;
 pub mod view;
 
 pub struct TimeTracker {
-    last_time: u64,
-    now_time: u64,
-    next_fps_time: u64,
-    fps_ctr: uint,
-    curr_fps: uint
+    pub last_time: u64,
+    pub now_time: u64,
+    pub next_fps_time: u64,
+    pub fps_ctr: uint,
+    pub curr_fps: uint
 }
 impl TimeTracker {
     pub fn new() -> TimeTracker {
