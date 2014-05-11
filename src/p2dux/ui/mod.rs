@@ -11,7 +11,6 @@ use p2d::sprite::SpriteTile;
 use gfx::GameDisplay;
 
 pub mod menu;
-pub mod input;
 
 pub trait UiFont {
     fn get_sheet(&self) -> ~str;
