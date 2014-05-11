@@ -7,7 +7,7 @@
 
 use gfx::GameDisplay;
 use super::super::ui::{UiFont, UiBox};
-use super::View;
+use super::{PassiveView, View};
 
 pub struct TextInputDialogView<'a, TFont, TBox> {
     input_state: ~str,
@@ -20,6 +20,10 @@ pub struct TextInputDialogView<'a, TFont, TBox> {
     text_gap: uint,
     ui_font: &'a TFont,
     ui_box: &'a TBox
+}
+
+pub struct DisplayClearerPassiveView {
+    bg_color: (u8, u8, u8)
 }
 
 impl<'a, TFont: UiFont, TBox: UiBox> TextInputDialogView<'a, TFont, TBox> {
@@ -46,5 +50,20 @@ impl<'a, TFont: UiFont, TBox: UiBox> View<~str> for TextInputDialogView<'a, TFon
     }
     fn update(&mut self) -> Option<~str> {
        Some(~"#YOLO")
+    }
+}
+
+impl DisplayClearerPassiveView {
+    pub fn new(bgc: (u8, u8, u8)) -> DisplayClearerPassiveView {
+        DisplayClearerPassiveView { bg_color: bgc }
+    }
+}
+impl PassiveView for DisplayClearerPassiveView {
+    fn update(&mut self, display: &GameDisplay, _time: u64) {
+        display.set_draw_color(self.bg_color);
+        match display.renderer.clear() {
+            Err(e) => fail!("Display Clearer.update(): failed to clear display: {}", e),
+            _ => {}
+        }
     }
 }

@@ -75,6 +75,7 @@ impl ViewManager {
                 }
             }
             active.update(display, time);
+            display.renderer.present();
             loop {
                 match poll_event() {
                     NoEvent => { break; },
