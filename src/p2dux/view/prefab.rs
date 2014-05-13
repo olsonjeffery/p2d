@@ -4,10 +4,11 @@
 // at the top-level of this repository.
 // This file may not be copied, modified, or distributed
 // except according to those terms.
+use sdl2::event::Event;
 
 use gfx::GameDisplay;
 use super::super::ui::{UiFont, UiBox};
-use super::{PassiveView, View};
+use super::{ActiveView, PassiveView, View};
 
 pub struct TextInputDialogView<'a, TFont, TBox> {
     input_state: ~str,
@@ -59,11 +60,18 @@ impl DisplayClearerPassiveView {
     }
 }
 impl PassiveView for DisplayClearerPassiveView {
-    fn update(&mut self, display: &GameDisplay, _time: u64) {
+    fn passive_update(&mut self, display: &GameDisplay, _time: u64) {
         display.set_draw_color(self.bg_color);
         match display.renderer.clear() {
             Err(e) => fail!("Display Clearer.update(): failed to clear display: {}", e),
             _ => {}
         }
+    }
+}
+impl ActiveView<()> for DisplayClearerPassiveView {
+    fn active_update<'a>(&'a mut self, _d: &GameDisplay, _e: &[Event], _t: u64,
+              _p: & mut Vec<& mut PassiveView>)
+        -> Option<()> {
+            fail!("this should never be called.");
     }
 }
