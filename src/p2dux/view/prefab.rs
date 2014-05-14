@@ -8,7 +8,7 @@ use sdl2::event::Event;
 
 use gfx::GameDisplay;
 use super::super::ui::{UiFont, UiBox};
-use super::{ActiveView, PassiveView, View};
+use super::{ActiveView, PassiveView};
 
 pub struct TextInputDialogView<'a, TFont, TBox> {
     input_state: ~str,
@@ -46,11 +46,20 @@ impl<'a, TFont: UiFont, TBox: UiBox> TextInputDialogView<'a, TFont, TBox> {
         }
     }
 }
-impl<'a, TFont: UiFont, TBox: UiBox> View<~str> for TextInputDialogView<'a, TFont, TBox> {
-    fn draw(&self, _display: &GameDisplay, _parent_draw: |&GameDisplay|) {
+impl<'a, TFont: UiFont, TBox: UiBox> ActiveView<~str> for TextInputDialogView<'a, TFont, TBox> {
+    fn active_update<'a>(
+        &'a mut self,
+        _display: &GameDisplay,
+        _events: &[Event],
+        _ms_time: u64,
+        _passives: & mut Vec<& mut PassiveView>) -> Option<~str> {
+        //
+        Some(~"#YOLO")
     }
-    fn update(&mut self) -> Option<~str> {
-       Some(~"#YOLO")
+}
+
+impl<'a, TFont: UiFont, TBox: UiBox> PassiveView for TextInputDialogView<'a, TFont, TBox> {
+    fn passive_update(&mut self, _display: &GameDisplay, _t: u64) {
     }
 }
 

@@ -31,34 +31,40 @@ pub fn throttle(fps: uint, cb: || -> bool) {
     }
 }
 
-pub trait View<TOut: Send> {
-    fn draw(&self, display: &GameDisplay, parent_draw: |&GameDisplay|);
-    fn update(&mut self) -> Option<TOut>;
+fn cb_loop(cb: || -> bool) {
+    loop {
+        match cb() {
+            false => break,
+            _ => {}
+        }
+    }
 }
 
 // ViewManager API exploration
 pub trait ActiveView<TOut> : PassiveView {
-    fn active_update<'a>(&'a mut self, display: &GameDisplay, events: &[Event], time: u64,
-              passives: & mut Vec<& mut PassiveView>)
-        -> Option<TOut>;
+    fn active_update<'a>(&'a mut self, display: &GameDisplay, events: &[Event], ms_time: u64,
+                         passives: & mut Vec<& mut PassiveView>)
+                         -> Option<TOut>;
     fn yield_to<'a, TOut: Send>(&'a mut self, display: &GameDisplay,
-                           active: &mut ActiveView<TOut>,
-                           passives: &mut Vec<&mut PassiveView>) -> TOut {
+                                active: &mut ActiveView<TOut>,
+                                passives: &mut Vec<&mut PassiveView>) -> TOut {
         let (sender, receiver) = channel();
-        throttle(1000, || {
-           match self.yield_inner(display, active, passives) {
-                Some(out) => { sender.send(out); false }, None => true
+        cb_loop(|| {
+            match self._yield_inner(display, active, passives) {
+                Some(out) => { sender.send(out); false },
+                None => true
             }
         });
         receiver.recv()
     }
 }
+
 pub trait PassiveView {
-    fn passive_update(&mut self, display: &GameDisplay, time: u64);
-    fn yield_inner<TOut>(&mut self, display: &GameDisplay,
-                           active: & mut ActiveView<TOut>,
-                           passives: & mut Vec<& mut PassiveView>) -> Option<TOut> {
-        let time = 0;
+    fn passive_update(&mut self, display: &GameDisplay, ms_time: u64);
+    fn _yield_inner<TOut>(&mut self, display: &GameDisplay,
+                         active: & mut ActiveView<TOut>,
+                         passives: & mut Vec<& mut PassiveView>) -> Option<TOut> {
+        let time = precise_time_ns() / 1000000;
 
         // eh heh heh heh
         unsafe {
@@ -83,9 +89,4 @@ pub trait PassiveView {
         passives.pop();
         result
     }
-}
-
-pub struct ViewManager;
-
-impl ViewManager {
 }
