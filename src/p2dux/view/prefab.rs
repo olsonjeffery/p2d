@@ -6,9 +6,8 @@
 // except according to those terms.
 use sdl2::event::Event;
 
-use gfx::GameDisplay;
 use super::super::ui::{UiFont, UiBox};
-use super::{ActiveView, PassiveView};
+use super::{ActiveView, PassiveView, DisplayViewContext};
 
 pub struct TextInputDialogView<'a, TFont, TBox> {
     input_state: ~str,
@@ -46,20 +45,22 @@ impl<'a, TFont: UiFont, TBox: UiBox> TextInputDialogView<'a, TFont, TBox> {
         }
     }
 }
-impl<'a, TFont: UiFont, TBox: UiBox> ActiveView<~str> for TextInputDialogView<'a, TFont, TBox> {
+impl<'a, TViewCtx: DisplayViewContext, TFont: UiFont, TBox: UiBox>
+        ActiveView<TViewCtx, ~str> for TextInputDialogView<'a, TFont, TBox> {
     fn active_update<'a>(
         &'a mut self,
-        _display: &GameDisplay,
+        _ctx: &TViewCtx,
         _events: &[Event],
         _ms_time: u64,
-        _passives: & mut Vec<& mut PassiveView>) -> Option<~str> {
+        _passives: & mut Vec<&mut PassiveView<TViewCtx> >) -> Option<~str> {
         //
         Some(~"#YOLO")
     }
 }
 
-impl<'a, TFont: UiFont, TBox: UiBox> PassiveView for TextInputDialogView<'a, TFont, TBox> {
-    fn passive_update(&mut self, _display: &GameDisplay, _t: u64) {
+impl<'a, TViewCtx: DisplayViewContext, TFont: UiFont, TBox: UiBox>
+        PassiveView<TViewCtx> for TextInputDialogView<'a, TFont, TBox> {
+    fn passive_update(&mut self, _ctx: &TViewCtx, _t: u64) {
     }
 }
 
@@ -68,8 +69,9 @@ impl DisplayClearerPassiveView {
         DisplayClearerPassiveView { bg_color: bgc }
     }
 }
-impl PassiveView for DisplayClearerPassiveView {
-    fn passive_update(&mut self, display: &GameDisplay, _time: u64) {
+impl<TViewCtx: DisplayViewContext> PassiveView<TViewCtx> for DisplayClearerPassiveView {
+    fn passive_update(&mut self, ctx: &TViewCtx, _time: u64) {
+        let display = ctx.get_display();
         display.set_draw_color(self.bg_color);
         match display.renderer.clear() {
             Err(e) => fail!("Display Clearer.update(): failed to clear display: {}", e),
@@ -77,9 +79,10 @@ impl PassiveView for DisplayClearerPassiveView {
         }
     }
 }
-impl ActiveView<()> for DisplayClearerPassiveView {
-    fn active_update<'a>(&'a mut self, _d: &GameDisplay, _e: &[Event], _t: u64,
-              _p: & mut Vec<& mut PassiveView>)
+impl<TViewCtx: DisplayViewContext> ActiveView<TViewCtx, ()>
+        for DisplayClearerPassiveView {
+    fn active_update<'a>(&'a mut self, _ctx: &TViewCtx, _e: &[Event], _t: u64,
+              _p: &mut Vec<&mut PassiveView<TViewCtx> >)
         -> Option<()> {
             fail!("this should never be called.");
     }

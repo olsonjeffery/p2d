@@ -40,17 +40,21 @@ fn cb_loop(cb: || -> bool) {
     }
 }
 
+pub trait DisplayViewContext {
+    fn get_display<'a>(&'a self) -> &'a GameDisplay;
+}
+
 // ViewManager API exploration
-pub trait ActiveView<TOut> : PassiveView {
-    fn active_update<'a>(&'a mut self, display: &GameDisplay, events: &[Event], ms_time: u64,
-                         passives: & mut Vec<& mut PassiveView>)
+pub trait ActiveView<TViewCtx: DisplayViewContext, TOut: Send> : PassiveView<TViewCtx> {
+    fn active_update<'a>(&'a mut self, ctx: &TViewCtx, events: &[Event], ms_time: u64,
+                         passives: & mut Vec<& mut PassiveView<TViewCtx> >)
                          -> Option<TOut>;
-    fn yield_to<'a, TOut: Send>(&'a mut self, display: &GameDisplay,
-                                active: &mut ActiveView<TOut>,
-                                passives: &mut Vec<&mut PassiveView>) -> TOut {
+    fn yield_to<'a, TOut: Send>(&'a mut self, ctx: &TViewCtx,
+                                active: &mut ActiveView<TViewCtx, TOut>,
+                                passives: &mut Vec<&mut PassiveView<TViewCtx> >) -> TOut {
         let (sender, receiver) = channel();
         cb_loop(|| {
-            match self._yield_inner(display, active, passives) {
+            match self._yield_inner(ctx, active, passives) {
                 Some(out) => { sender.send(out); false },
                 None => true
             }
@@ -59,33 +63,33 @@ pub trait ActiveView<TOut> : PassiveView {
     }
 }
 
-pub trait PassiveView {
-    fn passive_update(&mut self, display: &GameDisplay, ms_time: u64);
-    fn _yield_inner<TOut>(&mut self, display: &GameDisplay,
-                         active: & mut ActiveView<TOut>,
-                         passives: & mut Vec<& mut PassiveView>) -> Option<TOut> {
+pub trait PassiveView<TViewCtx: DisplayViewContext> {
+    fn passive_update(&mut self, ctx: &TViewCtx, ms_time: u64);
+    fn _yield_inner<TOut: Send>(&mut self, ctx: &TViewCtx,
+                         active: & mut ActiveView<TViewCtx, TOut>,
+                         passives: & mut Vec<& mut PassiveView<TViewCtx> >) -> Option<TOut> {
         let time = precise_time_ns() / 1000000;
 
         // eh heh heh heh
         unsafe {
-            let yielding = transmute(self as &mut PassiveView);
+            let yielding = transmute(self as &mut PassiveView<TViewCtx>);
             passives.push(yielding);
         }
         let mut events = Vec::new();
         {
             for view in passives.mut_iter() {
-                view.passive_update(display, time);
+                view.passive_update(ctx, time);
             }
         }
-        active.passive_update(display, time);
-        display.renderer.present();
+        active.passive_update(ctx, time);
+        ctx.get_display().renderer.present();
         loop {
             match poll_event() {
                 NoEvent => { break; },
                 event => { events.push(event); }
             }
         }
-        let result = active.active_update(display, events.as_slice(), time, passives);
+        let result = active.active_update(ctx, events.as_slice(), time, passives);
         passives.pop();
         result
     }
