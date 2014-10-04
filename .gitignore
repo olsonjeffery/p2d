@@ -98,3 +98,4 @@ i686-pc-mingw32/
 rustpkg_db.json
 /src/rust-sdl2/rust-sdl2
 /Cargo.lock
+/target
