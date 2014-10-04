@@ -5,16 +5,16 @@
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::cmp::{Eq, TotalEq};
+use std::cmp::{PartialEq, Eq};
 use std::hash::Hash;
-use collections::hashmap::HashMap;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::zone::{Zone, ZoneTraversalResult, Destination,
                   DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
 
-#[deriving(Decodable, Encodable, Eq, Hash, TotalEq)]
+#[deriving(Decodable, Encodable, Eq, PartialEq, Hash)]
 pub enum TraversalDirection {
     North,
     East,
@@ -45,7 +45,7 @@ pub struct World<TWorldPayload, TZonePayload, TTilePayload> {
     pub portals: HashMap<Uuid, Portal>,
 }
 
-#[deriving(Eq, TotalEq, Hash, Clone, Encodable, Decodable)]
+#[deriving(Eq, PartialEq, Hash, Clone, Encodable, Decodable)]
 pub struct GlobalCoord {
     pub zone_id: Uuid,
     pub coords: (uint, uint)
@@ -60,7 +60,7 @@ impl GlobalCoord {
     }
 }
 
-#[deriving(Hash, TotalEq)]
+#[deriving(Hash, Eq, PartialEq)]
 pub struct RelativeCoord {
     pub zone_id: Uuid,
     pub lx: uint,
@@ -80,15 +80,6 @@ impl RelativeCoord {
             gx: gx,
             gy: gy
         }
-    }
-}
-impl Eq for RelativeCoord {
-    fn eq(&self, other: &RelativeCoord) -> bool {
-        return self.zone_id == other.zone_id
-            && self.gx == other.gx
-            && self.gy == other.gy
-            && self.lx == other.lx
-            && self.ly == other.ly
     }
 }
 
@@ -139,14 +130,14 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
         &mut zone.get_tile_mut(gc.coords).payload
     }
     pub fn get_zone<'a>(&'a self, id: &Uuid) -> &'a Zone<TZonePayload, TTilePayload> {
-        self.zones.find(id).expect(format!("Cannot find zone with id {:?}", id))
+        self.zones.find(id).expect(format!("Cannot find zone with id {:?}", id).as_slice())
     }
     pub fn get_zone_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut Zone<TZonePayload, TTilePayload> {
-        self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id))
+        self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id).as_slice())
     }
 
     pub fn get_portal<'a>(&'a self, id: Uuid) -> &'a Portal {
-        self.portals.find(&id).expect(format!("Cannot find portal with id {:?}", id))
+        self.portals.find(&id).expect(format!("Cannot find portal with id {:?}", id).as_slice())
 
     }
 

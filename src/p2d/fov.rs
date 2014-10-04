@@ -6,7 +6,7 @@
 // except according to those terms.
 
 use std::vec::Vec;
-use collections::hashmap::{HashSet};
+use std::collections::HashSet;
 use uuid::Uuid;
 
 use world::{Payloadable, World, RelativeCoord, TraversalDirection,

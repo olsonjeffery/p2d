@@ -7,13 +7,13 @@
 
 #[deriving(Clone, Encodable, Decodable)]
 pub struct SpriteSheet {
-    pub path: ~str,
-    pub name: ~str
+    pub path: String,
+    pub name: String
 }
 
 #[deriving(Encodable, Decodable)]
 pub struct SpriteTile {
-    pub sheet: ~str,
+    pub sheet: String,
     pub coords: (uint, uint),
     pub size: (uint, uint)
 }
@@ -28,5 +28,5 @@ impl Clone for SpriteTile {
     }
 }
 impl SpriteTile {
-    pub fn stub() -> SpriteTile { SpriteTile { sheet: ~"", coords: (0,0), size:(0,0) } }
+    pub fn stub() -> SpriteTile { SpriteTile { sheet: "".to_string(), coords: (0,0), size:(0,0) } }
 }

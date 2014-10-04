@@ -12,7 +12,8 @@
 
 use std::option::{None, Some};
 use std::vec::Vec;
-use collections::hashmap::HashMap;
+use std::collections::HashMap;
+
 use uuid::Uuid;
 
 use super::world::{GlobalCoord, Payloadable};
@@ -89,10 +90,10 @@ impl<TZonePayload, TTilePayload: Send + Payloadable> Zone<TZonePayload, TTilePay
     ///////////////////////
     pub fn get_payload_coords<'a>(&'a self, plid: &Uuid) -> &'a (uint, uint) {
         self.payload_coords.find(plid).expect(
-            format!("Unable to find coords for payload {:?}", plid))
+            format!("Unable to find coords for payload {:?}", plid).as_slice())
     }
     pub fn get_portal_coords<'a>(&'a self, pid: &Uuid) -> &'a (uint, uint) {
-        self.portal_coords.find(pid).expect(format!("Unable to find coords for portal {:?}", pid))
+        self.portal_coords.find(pid).expect(format!("Unable to find coords for portal {:?}", pid).as_slice())
     }
     pub fn coords_in_bounds(&self, coords: (uint, uint)) -> bool {
         let (x, y) = coords;

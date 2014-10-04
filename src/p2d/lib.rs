@@ -11,11 +11,12 @@
 #![license = "MIT"]
 #![feature(phase, globs)]
 
-extern crate serialize = "serialize";
-extern crate uuid = "uuid";
-extern crate collections = "collections";
-#[phase(syntax, link)]
-extern crate log = "log";
+extern crate serialize;
+extern crate uuid;
+extern crate collections;
+#[phase(plugin, link)]
+extern crate log;
+extern crate debug;
 
 pub mod world;
 pub mod zone;
