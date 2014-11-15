@@ -15,8 +15,8 @@ extern crate serialize;
 extern crate uuid;
 extern crate collections;
 #[phase(plugin, link)]
+//extern crate debug;
 extern crate log;
-extern crate debug;
 
 pub mod world;
 pub mod zone;

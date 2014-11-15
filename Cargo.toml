@@ -9,3 +9,5 @@ authors = [ "Jeff Olson <olson.jeffery@gmail.com>" ]
 name       = "p2d"
 path       = "src/p2d/lib.rs"
 
+[dependencies.uuid]
+git = "https://github.com/rust-lang/uuid"

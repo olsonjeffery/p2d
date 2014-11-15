@@ -14,7 +14,7 @@ use super::zone::{Zone, ZoneTraversalResult, Destination,
                   DestinationOutsideBounds, DestinationBlocked};
 use super::portal::Portal;
 
-#[deriving(Decodable, Encodable, Eq, PartialEq, Hash)]
+#[deriving(Decodable, Encodable, Eq, PartialEq, Hash, Show)]
 pub enum TraversalDirection {
     North,
     East,
@@ -130,14 +130,14 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
         &mut zone.get_tile_mut(gc.coords).payload
     }
     pub fn get_zone<'a>(&'a self, id: &Uuid) -> &'a Zone<TZonePayload, TTilePayload> {
-        self.zones.find(id).expect(format!("Cannot find zone with id {:?}", id).as_slice())
+        self.zones.find(id).expect(format!("Cannot find zone with id {}", id).as_slice())
     }
     pub fn get_zone_mut<'a>(&'a mut self, id: &Uuid) -> &'a mut Zone<TZonePayload, TTilePayload> {
-        self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {:?}", id).as_slice())
+        self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {}", id).as_slice())
     }
 
     pub fn get_portal<'a>(&'a self, id: Uuid) -> &'a Portal {
-        self.portals.find(&id).expect(format!("Cannot find portal with id {:?}", id).as_slice())
+        self.portals.find(&id).expect(format!("Cannot find portal with id {}", id).as_slice())
 
     }
 
@@ -148,7 +148,7 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
             West => (-1, 0),
             South => (0, 1),
             East => (1, 0),
-            NoDirection => fail!("NoDirection not allowed in traverse()")
+            NoDirection => panic!("NoDirection not allowed in traverse()")
         };
         let curr_zone_id = src.zone_id;
         let (dest_zone_id, dest_coords) = {
@@ -162,7 +162,7 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
                     Some(pid) => {
                         let portal = self.get_portal(pid);
                         let (_, td) = portal.info_from(curr_zone.id);
-                        println!("portal dir: {:?} traversing dir: {:?}", td, dir);
+                        println!("portal dir: {} traversing dir: {}", td, dir);
                         td == dir
                     },
                     None => false
@@ -180,9 +180,9 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
                     East => (ocx as int+1 as int, ocy as int),
                     South => (ocx as int, ocy as int+1 as int),
                     West => (ocx as int-1 as int, ocy as int),
-                    NoDirection => fail!("NoDirection not allowed in traverse()")
+                    NoDirection => panic!("NoDirection not allowed in traverse()")
                 };
-                println!("other zone: {:?}, this zone: {:?}", ozid, curr_zone_id);
+                println!("other zone: {}, this zone: {}", ozid, curr_zone_id);
                 (ozid, oc)
             } else {
                 let dest_coords = (curr_x as int + d_x, curr_y as int + d_y);
@@ -191,7 +191,7 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
         };
         let dest_zone = self.get_zone(&dest_zone_id);
         let (dx, dy) = dest_coords;
-        println!("Dir {:?} Delta {:?} src: {:?} dest: {:?}",dir,delta,src.coords, dest_coords);
+        println!("Dir {} Delta {} src: {} dest: {}",dir,delta,src.coords, dest_coords);
         if dx < 0 || dy < 0 || dx >= dest_zone.size as int|| dy >= dest_zone.size as int{
             DestinationOutsideBounds
         } else {
