@@ -101,15 +101,15 @@ pub fn compute<TWorldPayload, TZonePayload, TPayload: Send + Payloadable + FovIt
             let (tiles, zones) = compute_octant(
                 world, zone, curr_focus, curr_offset, max_radius, from_pid,
                 &mut in_fov, start_ang, end_ang, quadrant, is_vert, from_dir);
-            for t in tiles.move_iter() { visible_tiles.insert(t); }
-            for z in zones.move_iter() { pending_zones.push(z); }
+            for t in tiles.into_iter() { visible_tiles.insert(t); }
+            for z in zones.into_iter() { pending_zones.push(z); }
         }
         let found = visible_tiles.len() - before_len;
         println!("Found {} tiles in {}", found, curr_zid);
     }
 
     debug!("num of visible_tiles: {}", visible_tiles.len());
-    visible_tiles.move_iter().collect()
+    visible_tiles.into_iter().collect()
 }
 
 fn min(a: int, b: int) -> int {
@@ -400,8 +400,8 @@ fn compute_octant<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable 
         }
         debug!("vert done");
     }
-    (visible_tiles.move_iter().collect(),
-     pending_zones.move_iter().collect())
+    (visible_tiles.into_iter().collect(),
+     pending_zones.into_iter().collect())
 }
 
 fn build_pending_zone_entry<TWorldPayload, TZonePayload, TPayload: Send + Payloadable + FovItem>(

@@ -98,7 +98,7 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
         let zone_id = Uuid::new_v4();
         let z = Zone::<TZonePayload, TTilePayload>::new(size, zone_id, data);
         self.zones.insert(zone_id, z);
-        cb(self.zones.get_mut(&zone_id));
+        cb(self.zones.get_mut(&zone_id).unwrap());
         zone_id
     }
 

@@ -103,10 +103,10 @@ impl<TZonePayload, TTilePayload: Send + Payloadable> Zone<TZonePayload, TTilePay
     // Tile related
     ///////////////////////
     pub fn tile_at_idx<'a>(&'a self, idx: uint) -> &'a Tile<TTilePayload> {
-        self.all_tiles.get(idx)
+        &self.all_tiles[idx]
     }
     pub fn tile_at_idx_mut<'a>(&'a mut self, idx: uint) -> &'a mut Tile<TTilePayload> {
-        self.all_tiles.get_mut(idx)
+        &mut self.all_tiles[idx]
     }
     pub fn get_tile<'a>(&'a self, coords: (uint, uint)) -> &'a Tile<TTilePayload> {
         let idx = coords_to_idx(coords, self.size);
