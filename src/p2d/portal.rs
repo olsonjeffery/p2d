@@ -7,7 +7,8 @@
 
 use uuid::Uuid;
 
-use super::world::{TraversalDirection, North, East, South, West};
+use world::TraversalDirection;
+use world::TraversalDirection::*;
 
 #[deriving(Encodable, Decodable)]
 pub struct Portal {

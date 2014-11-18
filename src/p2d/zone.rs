@@ -16,7 +16,8 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use super::world::{GlobalCoord, Payloadable};
+use world::GlobalCoord;
+use world::Payloadable;
 
 pub fn coords_to_idx(coords: (uint, uint), size: uint) -> uint {
     let (x, y) = coords;

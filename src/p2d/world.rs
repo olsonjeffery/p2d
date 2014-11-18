@@ -10,9 +10,11 @@ use std::hash::Hash;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use super::zone::{Zone, ZoneTraversalResult, Destination,
-                  DestinationOutsideBounds, DestinationBlocked};
-use super::portal::Portal;
+use zone::{Zone, ZoneTraversalResult};
+use zone::ZoneTraversalResult::*;
+use portal;
+
+use self::TraversalDirection::*;
 
 #[deriving(Decodable, Encodable, Eq, PartialEq, Hash, Show)]
 pub enum TraversalDirection {
@@ -42,10 +44,10 @@ pub trait Payloadable {
 pub struct World<TWorldPayload, TZonePayload, TTilePayload> {
     pub data: TWorldPayload,
     pub zones: HashMap<Uuid, Zone<TZonePayload, TTilePayload>>,
-    pub portals: HashMap<Uuid, Portal>,
+    pub portals: HashMap<Uuid, portal::Portal>,
 }
 
-#[deriving(Eq, PartialEq, Hash, Clone, Encodable, Decodable)]
+#[deriving(Eq, PartialEq, Hash, Clone, Encodable, Decodable, Show)]
 pub struct GlobalCoord {
     pub zone_id: Uuid,
     pub coords: (uint, uint)
@@ -107,7 +109,7 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
         let next_id = Uuid::new_v4();
         let (az, ac, ax) = a;
         let (bz, bc, bx) = b;
-        let portal = Portal::new(next_id, az, ax, bz, bx);
+        let portal = portal::Portal::new(next_id, az, ax, bz, bx);
         self.portals.insert(next_id, portal);
         {
             let zone_a = self.get_zone_mut(&az);
@@ -136,7 +138,7 @@ impl<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable>
         self.zones.find_mut(id).expect(format!("Cannot find_mut zone with id {}", id).as_slice())
     }
 
-    pub fn get_portal<'a>(&'a self, id: Uuid) -> &'a Portal {
+    pub fn get_portal<'a>(&'a self, id: Uuid) -> &'a portal::Portal {
         self.portals.find(&id).expect(format!("Cannot find portal with id {}", id).as_slice())
 
     }

@@ -9,9 +9,11 @@ use std::vec::Vec;
 use std::collections::HashSet;
 use uuid::Uuid;
 
-use world::{Payloadable, World, RelativeCoord, TraversalDirection,
-            North, South, East, West, NoDirection};
+use world::{Payloadable, World, RelativeCoord, TraversalDirection};
+use world::TraversalDirection::*;
 use zone::{Zone, Tile};
+
+use self::FovType::*;
 
 #[deriving(Clone, Encodable, Decodable)]
 pub enum FovType {
