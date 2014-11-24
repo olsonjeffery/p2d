@@ -11,3 +11,6 @@ path       = "src/p2d/lib.rs"
 
 [dependencies.uuid]
 git = "https://github.com/rust-lang/uuid"
+
+[dependencies.ecs]
+git = "https://github.com/HeroesGrave/ecs-rs"

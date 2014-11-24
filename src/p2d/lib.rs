@@ -14,6 +14,7 @@
 extern crate serialize;
 extern crate uuid;
 extern crate collections;
+extern crate ecs;
 #[phase(plugin, link)]
 //extern crate debug;
 extern crate log;
