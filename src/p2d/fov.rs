@@ -6,6 +6,7 @@
 // except according to those terms.
 
 use std::vec::Vec;
+use std::default::Default;
 use std::collections::HashSet;
 use uuid::Uuid;
 
@@ -13,13 +14,16 @@ use world::{Payloadable, World, RelativeCoord, TraversalDirection};
 use world::TraversalDirection::*;
 use zone::{Zone, Tile};
 
-use self::FovType::*;
+pub use self::FovType::*;
 
-#[deriving(Clone, Encodable, Decodable)]
+#[deriving(Clone, Encodable, Decodable, Copy, Show, PartialEq)]
 pub enum FovType {
     Blocking,
     Transparent,
     Void
+}
+impl Default for FovType {
+    fn default() -> FovType { FovType::Void }
 }
 impl FovType {
     pub fn allow_los(&self) -> bool {
@@ -82,8 +86,6 @@ pub fn compute<TWorldPayload, TZonePayload, TPayload: Send + Payloadable + FovIt
                     x == 1
             }),
         };
-        println!("mrpas in zid:{} from_dir:{} at fc:{} gx:{}",
-                 curr_zid, from_dir, curr_focus,curr_offset);
         let zone = world.get_zone(&curr_zid);
         // always insert focus pos, then check for portal at starting pos
         if from_pid == Uuid::nil() {
@@ -107,7 +109,6 @@ pub fn compute<TWorldPayload, TZonePayload, TPayload: Send + Payloadable + FovIt
             for z in zones.into_iter() { pending_zones.push(z); }
         }
         let found = visible_tiles.len() - before_len;
-        println!("Found {} tiles in {}", found, curr_zid);
     }
 
     debug!("num of visible_tiles: {}", visible_tiles.len());
@@ -146,8 +147,6 @@ fn compute_octant<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable 
         NoDirection => (raw_px, raw_py),
         _ => {
             let (px, py) = (raw_px - in_ox, raw_py - in_oy);
-            println!("compute zid:{}: pos:{} raw:{} offset:{}",
-                    zone.id, (px, py), position, offset);
             (px, py)
         }
     };
@@ -212,7 +211,6 @@ fn compute_octant<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable 
                 let c = x + (y * wsize as int);
                 let in_bounds = x >= 0 && y >= 0 && zone.coords_in_bounds((x as uint, y as uint));
                 let c_tile = if in_bounds {
-                    //println!("c_tile fetch tile_at_idx:{}", (x,y));
                     zone.tile_at_idx(c as uint)
                 } else {
                     &stub_tile
@@ -250,13 +248,11 @@ fn compute_octant<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable 
                             (y - dy >= 0) && (y - dy < wsize as int)
                         };
                         let zy_tile_trans = if zy >= 0 && zy < wsize_sq as int {
-                            //println!("zy{} fetch tile_at_idx:{}",zy, (x,y));
                             let t = zone.tile_at_idx(zy as uint);
                             t.payload.get_fov().allow_los()
                         } else { true };
                         let zyx = (x-dx) + ((y-dy) * wsize as int);
                         let zyx_tile_trans = if zyx >= 0 && zyx < wsize_sq as int {
-                            //println!("zyx:{} fetch tile_at_idx:{}",zyx, (x,y));
                             let t = zone.tile_at_idx(zyx as uint);
                             t.payload.get_fov().allow_los()
                         } else { true };
@@ -386,21 +382,17 @@ fn compute_octant<TWorldPayload, TZonePayload, TTilePayload: Send + Payloadable 
             if is_vert {
                 y += dy;
                 if y < -padding || y >= (wsize as int)+padding {
-                    debug!("vdt: ending y:{} < 0 || >= wsize", y);
                     done = true;
                 }
             } else {
                 x += dx;
                 if x < -padding || x >= (wsize as int)+padding {
-                    debug!("vdt: ending y:{} < 0 || >= wsize", y);
                     done = true;
                 }
             }
             if min_angle == 1.0 {
-                debug!("vdt: min_angle == 1.0");
                 done = true; }
         }
-        debug!("vert done");
     }
     (visible_tiles.into_iter().collect(),
      pending_zones.into_iter().collect())
@@ -414,6 +406,5 @@ fn build_pending_zone_entry<TWorldPayload, TZonePayload, TPayload: Send + Payloa
     let (ozid, from_dir) = portal.info_from(zid);
     let other_zone = world.get_zone(&ozid);
     let oc = other_zone.get_portal_coords(&pid);
-    println!("pushing new ze: zid:{} focus:{} offset:{}", ozid, oc, this_gx);
     (ozid, *oc, this_gx, remaining_radius, pid, from_dir)
 }
